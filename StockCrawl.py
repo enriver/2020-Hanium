@@ -6,10 +6,11 @@ Created on Mon Jul 27 09:39:42 2020
 """
 import pandas as pd
 import requests
-import webbrowser
-import json
-from urllib.request import urlopen
 from bs4 import BeautifulSoup
+import io
+import zipfile
+import xml.etree.ElementTree as et
+import json
 
    # 네이버 금융에서 종목 가격정보와 거래량을 가져오는 함수: get_price
 
@@ -37,4 +38,62 @@ stock=get_price('000720')
 stock=stock.reset_index(drop=False, inplace=False)
 
 
+api_key='f41c1f1e770dd7404dfb83cfb1fc00139eb9ea15'
 
+url='https://opendart.fss.or.kr/api/fnlttSinglAcnt.json?crtfc_key='+api_key+'&corp_code=000720&bsns_year=2016&reprt_code=11011&fs_div=OFS'
+
+def get_corpcode(crtfc_key):
+    """ OpenDART 기업 고유번호 받아오기 return 값:주식코드를 가진 업체의 DataFrame """
+    params = {'crtfc_key':crtfc_key}
+    items = ["corp_code","corp_name","stock_code","modify_date"]
+    item_names = ["고유번호","회사명","종목코드","수정일"]
+    url = "https://opendart.fss.or.kr/api/corpCode.xml"
+    res = requests.get(url,params=params)
+    zfile = zipfile.ZipFile(io.BytesIO(res.content))
+    fin = zfile.open(zfile.namelist()[0])
+    root = et.fromstring(fin.read().decode('utf-8'))
+    data = []
+    for child in root:
+        if len(child.find('stock_code').text.strip()) > 1: # 종목코드가 있는 경우
+            data.append([])
+            for item in items:
+                data[-1].append(child.find(item).text)
+    df = pd.DataFrame(data, columns=item_names)
+    return df
+
+
+corpCode=pd.DataFrame()
+corpCode=get_corpcode(api_key)
+
+def convertFnltt(url, items, item_names, params):
+    res = requests.get(url, params)
+    json_dict = json.loads(res.text)
+    data = []
+    if json_dict['status']=="000":
+        for line in json_dict['list']:
+            data.append([])
+            for itm in items:
+                if itm in line.keys():
+                    data[-1].append(line[itm])
+                else: data[-1].append('')
+    df = pd.DataFrame(data,columns=item_names)
+    return df
+
+
+
+def get_fnlttSinglAcntAll(crtfc_key, corp_code, bsns_year, reprt_code, fs_div = "CFS"):
+    items = ["rcept_no","reprt_code","bsns_year","corp_code","sj_div","sj_nm",
+             "account_id","account_nm","account_detail","thstrm_nm", "thstrm_amount",
+             "thstrm_add_amount","frmtrm_nm","frmtrm_amount", "frmtrm_q_nm",
+             "frmtrm_q_amount","frmtrm_add_amount","bfefrmtrm_nm", "bfefrmtrm_amount","ord"]
+    item_names = ["접수번호","보고서코드","사업연도","고유번호","재무제표구분", "재무제표명",
+                  "계정ID","계정명","계정상세","당기명","당기금액", "당기누적금액","전기명",
+                  "전기금액","전기명(분/반기)", "전기금액(분/반기)","전기누적금액","전전기명",
+                  "전전기금액", "계정과목정렬순서"]
+    params = {'crtfc_key':crtfc_key, 'corp_code':corp_code, 'bsns_year':bsns_year, 'reprt_code':reprt_code, 'fs_div':fs_div}
+    url = "https://opendart.fss.or.kr/api/fnlttSinglAcntAll.json?"
+    return convertFnltt(url,items,item_names,params)
+
+finanState=pd.DataFrame()
+
+finanState=get_fnlttSinglAcntAll(api_key,'00164478',2016, 11011,fs_div="OFS")
