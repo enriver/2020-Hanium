@@ -12,7 +12,9 @@ import zipfile
 import xml.etree.ElementTree as et
 import json
 
-   # 네이버 금융에서 종목 가격정보와 거래량을 가져오는 함수: get_price
+   
+"""
+# 네이버 금융에서 종목 가격정보와 거래량을 가져오는 함수: get_price
 
 def get_price(company_code):
     # count=1000에서 1000은 과거 1,000 영업일간의 데이터를 의미. 사용자가 조절 가능
@@ -36,11 +38,11 @@ def get_price(company_code):
 stock=pd.DataFrame()
 stock=get_price('000720')
 stock=stock.reset_index(drop=False, inplace=False)
+"""
 
 
-api_key='f41c1f1e770dd7404dfb83cfb1fc00139eb9ea15'
 
-url='https://opendart.fss.or.kr/api/fnlttSinglAcnt.json?crtfc_key='+api_key+'&corp_code=000720&bsns_year=2016&reprt_code=11011&fs_div=OFS'
+#url='https://opendart.fss.or.kr/api/fnlttSinglAcnt.json?crtfc_key='+api_key+'&corp_code=000720&bsns_year=2016&reprt_code=11011&fs_div=OFS'
 
 def get_corpcode(crtfc_key):
     """ OpenDART 기업 고유번호 받아오기 return 값:주식코드를 가진 업체의 DataFrame """
@@ -61,9 +63,6 @@ def get_corpcode(crtfc_key):
     df = pd.DataFrame(data, columns=item_names)
     return df
 
-
-corpCode=pd.DataFrame()
-corpCode=get_corpcode(api_key)
 
 def convertFnltt(url, items, item_names, params):
     res = requests.get(url, params)
@@ -94,6 +93,23 @@ def get_fnlttSinglAcntAll(crtfc_key, corp_code, bsns_year, reprt_code, fs_div = 
     url = "https://opendart.fss.or.kr/api/fnlttSinglAcntAll.json?"
     return convertFnltt(url,items,item_names,params)
 
-finanState=pd.DataFrame()
 
-finanState=get_fnlttSinglAcntAll(api_key,'00164478',2016, 11011,fs_div="OFS")
+
+
+
+api_key='f41c1f1e770dd7404dfb83cfb1fc00139eb9ea15'
+
+corpCode=get_corpcode(api_key) # 기업코드 DataFrame
+
+hyundaiArchi=corpCode[corpCode['회사명']=='현대건설']
+hdArchi_code=hyundaiArchi['고유번호'][2229]
+
+finan16=get_fnlttSinglAcntAll(api_key,hdArchi_code,2016, 11011,fs_div="OFS")
+finan17=get_fnlttSinglAcntAll(api_key,hdArchi_code,2017, 11011,fs_div="OFS")
+finan18=get_fnlttSinglAcntAll(api_key,hdArchi_code,2018, 11011,fs_div="OFS")
+finan19=get_fnlttSinglAcntAll(api_key,hdArchi_code,2019, 11011,fs_div="OFS")
+
+Total_finan=pd.concat([finan16,finan17,finan18,finan19])
+
+corpCode.to_csv("C:\\Users\\river\\Desktop\\Hanium\\HaniumCode\\corpCode.csv",encoding='ms949')
+Total_finan.to_csv("C:\\Users\\river\\Desktop\\Hanium\\HaniumCode\\현대건설_재무제표.csv",encoding='ms949')
