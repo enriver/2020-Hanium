@@ -12,37 +12,6 @@ import zipfile
 import xml.etree.ElementTree as et
 import json
 
-   
-"""
-# 네이버 금융에서 종목 가격정보와 거래량을 가져오는 함수: get_price
-
-def get_price(company_code):
-    # count=1000에서 1000은 과거 1,000 영업일간의 데이터를 의미. 사용자가 조절 가능
-    url = "https://fchart.stock.naver.com/sise.nhn?symbol={}&timeframe=day&count=1000&requestType=0".format(company_code)
-    get_result = requests.get(url)
-    bs_obj = BeautifulSoup(get_result.content, "html.parser")
-    
-    # information
-    inf = bs_obj.select('item')
-    columns = ['Date', 'Open' ,'High', 'Low', 'Close', 'Volume']
-    df_inf = pd.DataFrame([], columns = columns, index = range(len(inf)))
-    
-    for i in range(len(inf)):
-        df_inf.iloc[i] = str(inf[i]['data']).split('|')
-    
-    df_inf.index = pd.to_datetime(df_inf['Date'])
-    
-    return df_inf.drop('Date', axis=1).astype(float)
- 
-    
-stock=pd.DataFrame()
-stock=get_price('000720')
-stock=stock.reset_index(drop=False, inplace=False)
-"""
-
-
-
-#url='https://opendart.fss.or.kr/api/fnlttSinglAcnt.json?crtfc_key='+api_key+'&corp_code=000720&bsns_year=2016&reprt_code=11011&fs_div=OFS'
 
 def get_corpcode(crtfc_key):
     """ OpenDART 기업 고유번호 받아오기 return 값:주식코드를 가진 업체의 DataFrame """
