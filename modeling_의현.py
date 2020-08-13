@@ -21,7 +21,11 @@ def get_rank():
     name_list=[]
     
     fi_rank={}
-    for x in range(0,30):
+    
+    a=soup.find_all("td")
+    print(a)
+    
+    for x in range(0,29):
         name_list.append(soup.select(".tltle")[x].get_text())
         no_list.append(int(soup.select(".no")[x].get_text()))
         fi_rank[no_list[x]]=name_list[x]
