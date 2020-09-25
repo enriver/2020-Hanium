@@ -4,6 +4,7 @@ from PyQt5.QAxContainer import *
 from PyQt5.QtCore import *
 import time
 
+TR_REQ_TIME_INTERVAL=0.2
 
 class Kiwoom(QAxWidget):
     def __init__(self):
@@ -51,6 +52,10 @@ class Kiwoom(QAxWidget):
 
         return ret.strip()
 
+    def _get_repeat_cnt(self,trcode,rqname):
+        ret=self.dynamicCall("GetRepeatCnt(QString,QString)",trcode,rqname)
+        return ret
+
     def _receive_tr_data(self, screen_no, rqname, trcode, record_name, next, un1, un2, un3, un4):
         if next == '2':
             self.remained_data=True
@@ -61,6 +66,8 @@ class Kiwoom(QAxWidget):
             self._opw00001(rqname,trcode)
         elif rqname=='opw00018_req':
             self._opw00018(rqname,trcode)
+        elif rqname=='opt10081_req':
+            self._opt10081(rqname,trcode)
 
         try:
             self.tr_event_loop.exit()
@@ -71,18 +78,70 @@ class Kiwoom(QAxWidget):
         d2_deposit=self._comm_get_data(trcode,"",rqname,0,"d+2 추정예수금")
         self.d2_deposit=Kiwoom.change_format(d2_deposit)
     
+    def reset_opw00018_output(self):
+        self.opw00018_output={'single':[],'multi':[]}
+        
     def _opw00018(self,rqname,trcode):
+
+        # 전체
         total_purchase_price = self._comm_get_data(trcode, "", rqname, 0, "총매입금액")
         total_eval_price = self._comm_get_data(trcode, "", rqname, 0, "총평가금액")
         total_eval_profit_loss_price = self._comm_get_data(trcode, "", rqname, 0, "총평가손익금액")
         total_earning_rate = self._comm_get_data(trcode, "", rqname, 0, "총수익률(%)")
         estimated_deposit = self._comm_get_data(trcode, "", rqname, 0, "추정예탁자산")
 
-        self.total_purchase_price=Kiwoom.change_format(total_purchase_price)
-        self.total_eval_price=Kiwoom.change_format(total_eval_price)
-        self.total_eval_profit_loss_price=Kiwoom.change_format(total_eval_profit_loss_price)
-        self.total_earning_rate=Kiwoom.change_format(total_earning_rate)
-        self.estimated_deposit=Kiwoom.change_format(estimated_deposit)
+        total_earning_rate=Kiwoom.change_format(total_earning_rate)
+
+        if self.get_server_gubun():
+            total_earning_rate=float(total_earning_rate)/100
+            total_earning_rate=str(total_earning_rate)
+
+        self.opw00018_output['single'].append(Kiwoom.change_format(total_purchase_price))
+        self.opw00018_output['single'].append(Kiwoom.change_format(total_eval_price))
+        self.opw00018_output['single'].append(Kiwoom.change_format(total_eval_profit_loss_price))
+        self.opw00018_output['single'].append(total_earning_rate)
+        self.opw00018_output['single'].append(Kiwoom.change_format(estimated_deposit))
+
+        # 종목별
+        rows=self._get_repeat_cnt(trcode,rqname)
+
+        for i in range(rows):
+            name=self._comm_get_data(trcode,"",rqname,i,"종목명")
+            quantity=self._comm_get_data(trcode,"",rqname,i,"보유수량")
+            purchase_price=self._comm_get_data(trcode,"",rqname,i,"매입가")
+            current_price=self._comm_get_data(trcode,"",rqname,i,"현재가")
+            eval_profit_loss_price=self._comm_get_data(trcode,"",rqname,i,"평가손익")
+            earning_rate=self._comm_get_data(trcode,"",rqname,i,"수익률(%)")
+
+            quantity=Kiwoom.change_format(quantity)
+            purchase_price=Kiwoom.change_format(purchase_price)
+            current_price=Kiwoom.change_format(current_price)
+            eval_profit_loss_price=Kiwoom.change_format(eval_profit_loss_price)
+            earning_rate=Kiwoom.change_format2(earning_rate)
+
+            self.opw00018_output['multi'].append([name,quantity,purchase_price,current_price,eval_profit_loss_price,earning_rate])
+
+    def _opt10081(self,rqname,trcode):
+        data_cnt=self._get_repeat_cnt(trcode,rqname)
+
+        for i in range(data_cnt):
+            date=self._comm_get_data(trcode,"",rqname,i,"일자")
+            open=self._comm_get_data(trcode,"",rqname,i,"시가")
+            high=self._comm_get_data(trcode,"",rqname,i,"고가")
+            low=self._comm_get_data(trcode,"",rqname,i,"저가")
+            close=self._comm_get_data(trcode,"",rqname,i,"현재가")
+            volume=self._comm_get_data(trcode,"",rqname,i,"거래량")
+
+            self.ohlcv['date'].append(date)
+            self.ohlcv['open'].append(int(open))
+            self.ohlcv['high'].append(int(high))
+            self.ohlcv['low'].append(int(low))
+            self.ohlcv['close'].append(int(close))
+            self.ohlcv['volume'].append(int(volume))
+
+    def get_server_gubun(self):
+        ret=self.dynamicCall("KOA_Functions(QString,QString)","GetServerGubun","")
+        return ret
 
     @staticmethod
     def change_format(data):
@@ -91,7 +150,7 @@ class Kiwoom(QAxWidget):
             strip_data='0'
 
         try:
-            format_data=foramt(int(strip_data),',d')
+            format_data=format(int(strip_data),',d')
         except:
             format_data=format(float(strip_data))
 

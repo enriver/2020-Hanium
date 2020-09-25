@@ -3,6 +3,7 @@
 import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from PyQt5 import uic
 from Kiwoom import *
 import datetime
@@ -21,6 +22,7 @@ class MainWindow(QMainWindow,form_class):
         self.timer=QTimer(self)
         self.timer.start(1000)
         self.timer.timeout.connect(self.timeout)
+
 
         #로그아웃
         self.logout_btn.clicked.connect(self.logout_clicked)
@@ -58,14 +60,30 @@ class MainWindow(QMainWindow,form_class):
         self.lbl_deposit.setText(self.kiwoom.d2_deposit)
 
         #추정자산,총매입금,총평가금,손익,수익률
+        self.kiwoom.reset_opw00018_output()
         self.kiwoom.set_input_value("계좌번호",account_num.rstrip(';'))
         self.kiwoom.comm_rq_data("opw00018_req","opw00018",0,"2000")
 
-        self.lbl_asset.setText(self.kiwoom.estimated_deposit)
-        self.lbl_eval_amt.setText(self.kiwoom.total_eval_price)
-        self.lbl_purchase.setText(self.kiwoom.total_purchase_price)
-        self.lbl_profitLoss.setText(self.kiwoom.total_eval_profit_loss_price)
-        self.lbl_ror.setText(self.kiwoom.total_earning_rate)
+        self.lbl_asset.setText(self.kiwoom.opw00018_output['single'][4])
+        self.lbl_eval_amt.setText(self.kiwoom.opw00018_output['single'][1])
+        self.lbl_purchase.setText(self.kiwoom.opw00018_output['single'][0])
+        self.lbl_profitLoss.setText(self.kiwoom.opw00018_output['single'][2])
+        self.lbl_ror.setText(self.kiwoom.opw00018_output['single'][3])
+
+        #종목 자동완성
+        code_list=self.kiwoom.dynamicCall("GetCodeListByMarket(QString)",["0"])
+        kospi_code_list=code_list.split(';')
+        kospi_code_name_list=[]
+
+        for x in kospi_code_list:
+            name=self.kiwoom.dynamicCall("GetMasterCodeName(QString)",[x])
+            kospi_code_name_list.append(name)
+        
+        name_completer=QCompleter(kospi_code_name_list)
+        self.lineEdit.setCompleter(name_completer)
+
+        code_completer=QCompleter(kospi_code_list)
+        self.lineEdit_2.setCompleter(code_completer)
     
     def optSave_clicked(self):
         if optVal==1:
