@@ -7,6 +7,7 @@ from PyQt5.QtGui import *
 from PyQt5 import uic
 from Kiwoom import *
 import datetime
+import pymysql
 
 form_class=uic.loadUiType("main.ui")[0]
 
@@ -23,6 +24,8 @@ class MainWindow(QMainWindow,form_class):
         self.timer.start(1000)
         self.timer.timeout.connect(self.timeout)
 
+        conn=pymysql.connect(host='localhost', user='admin_ant', password='hanium1234', db='antmaking', charset='utf8')
+        cursor= conn.cursor()
 
         #로그아웃
         self.logout_btn.clicked.connect(self.logout_clicked)
@@ -49,6 +52,19 @@ class MainWindow(QMainWindow,form_class):
         self.tradeASC_rd.clicked.connect(self.groupboxRadFunction)
         self.tradeDESC_rd.clicked.connect(self.groupboxRadFunction)
 
+        # DB연결
+        
+        '''
+        conn=pymysql.connect(host='localhost', user='admin_ant', password='hanium1234', db='antmaking', charset='utf8')
+        cursor= conn.cursor()
+           
+        sql="INSERT INTO User_id (user_name, account, opt) values (%s, %s, %s)"
+
+        cursor.execute(sql,(user_name,account_num.rstrip(';'),str(optVal)))
+        conn.commit()
+        conn.close()
+        '''
+
         #옵션 저장
         self.optSave_btn.clicked.connect(self.optSave_clicked)
 
@@ -64,11 +80,11 @@ class MainWindow(QMainWindow,form_class):
         self.kiwoom.set_input_value("계좌번호",account_num.rstrip(';'))
         self.kiwoom.comm_rq_data("opw00018_req","opw00018",0,"2000")
 
-        self.lbl_asset.setText(self.kiwoom.opw00018_output['single'][4])
-        self.lbl_eval_amt.setText(self.kiwoom.opw00018_output['single'][1])
-        self.lbl_purchase.setText(self.kiwoom.opw00018_output['single'][0])
-        self.lbl_profitLoss.setText(self.kiwoom.opw00018_output['single'][2])
-        self.lbl_ror.setText(self.kiwoom.opw00018_output['single'][3])
+        self.lbl_purchase.setTexst(self.kiwoom.opw00018_output['single'][0]) #총매입
+        self.lbl_eval_amt.setText(self.kiwoom.opw00018_output['single'][1]) #총평가
+        self.lbl_profitLoss.setText(self.kiwoom.opw00018_output['single'][2]) #총손익
+        self.lbl_ror.setText(self.kiwoom.opw00018_output['single'][3]) #총수익률
+        self.lbl_asset.setText(self.kiwoom.opw00018_output['single'][4]) #총자산
 
         #종목 자동완성
         code_list=self.kiwoom.dynamicCall("GetCodeListByMarket(QString)",["0"])
@@ -84,6 +100,33 @@ class MainWindow(QMainWindow,form_class):
 
         code_completer=QCompleter(kospi_code_list)
         self.lineEdit_2.setCompleter(code_completer)
+
+        # 보유자산 종목 관리
+        self.check_balance()
+    
+    def check_balance(self):
+        # 총 자산관리
+        item=QTableWidgetItem(self.kiwoom.d2_deposit)
+        item.setTextAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        self.total_table.setItem(0,0,item)
+        for i in range(5):
+            item=QTableWidgetItem(self.kiwoom.opw00018_output['single'][i])
+            item.setTextAlignment(Qt.AlignVCenter | Qt.AlignRight)
+            self.total_table.setItem(0,i+1,item)
+
+        self.total_table.resizeRowsToContents()
+
+        # 보유 종목 관리
+        item_count=len(self.kiwoom.opw00018_output['multi'])
+        self.have_table.setRowCount(item_count)
+
+        for j in range(item_count):
+            row=self.kiwoom.opw00018_output['multi'][j]
+            for i in range(len(row)):
+                item=QTableWidgetItem(row[i])
+                item.setTextAlignment(Qt.AlignVCenter | Qt.AlignRight)
+                self.have_table.setItem(j,i,item)
+        self.have_table.resizeRowsToContents()
     
     def optSave_clicked(self):
         if optVal==1:
@@ -96,6 +139,7 @@ class MainWindow(QMainWindow,form_class):
             print("거래증가")
         elif optVal==5:
             print("거래감소")
+
     
     def groupboxRadFunction(self):
         '''

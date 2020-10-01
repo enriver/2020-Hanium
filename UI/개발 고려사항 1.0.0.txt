@@ -1,0 +1,20 @@
+개발 고려사항
+
+1. User_name, account_num 전역변수 설정
+ 
+2. MySQL 연동확인 ( 계정에 대해 원격으로 접속 가능한지 확인)
+
+3. 키움API를 통한 로그인 구현 : USER_ID 테이블에 id 속성 필요x
+
+4. 로그인시 테이블내 user_name 존재 여부 확인
+   (USER_ID TABLE)
+   - 없을 시 : INSERT INTO ~ VALUES ~
+   - 있을 시 : PASS
+
+   (Main QtTableWidget)
+   - 없을 시 : PASS
+   - 있을 시 : SELECT * FROM ~
+
+   (Interset QtTableWidget)
+   - 없을 시 : PASS
+   - 있을 시 : SELECT * FROM ~

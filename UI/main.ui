@@ -523,7 +523,7 @@
        <string>10:00 am</string>
       </property>
      </widget>
-     <widget class="QTableWidget" name="tableWidget">
+     <widget class="QTableWidget" name="main_table">
       <property name="geometry">
        <rect>
         <x>20</x>
@@ -730,7 +730,7 @@
       <property name="title">
        <string>보유 자산 및 종목</string>
       </property>
-      <widget class="QTableWidget" name="tableWidget_2">
+      <widget class="QTableWidget" name="total_table">
        <property name="geometry">
         <rect>
          <x>10</x>
@@ -778,7 +778,7 @@
         </property>
        </column>
       </widget>
-      <widget class="QTableWidget" name="tableWidget_3">
+      <widget class="QTableWidget" name="have_table">
        <property name="geometry">
         <rect>
          <x>10</x>
@@ -863,7 +863,7 @@
         <string>관심종목 삭제</string>
        </property>
       </widget>
-      <widget class="QTableWidget" name="tableWidget_4">
+      <widget class="QTableWidget" name="interest_table">
        <property name="geometry">
         <rect>
          <x>10</x>
