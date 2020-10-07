@@ -7,7 +7,9 @@ from PyQt5.QtGui import *
 from PyQt5 import uic
 from Kiwoom import *
 import datetime
-import pymysql
+import requests
+from bs4 import BeautifulSoup
+#import pymysql
 
 form_class=uic.loadUiType("main.ui")[0]
 
@@ -24,9 +26,6 @@ class MainWindow(QMainWindow,form_class):
         self.timer.start(1000)
         self.timer.timeout.connect(self.timeout)
 
-        conn=pymysql.connect(host='localhost', user='admin_ant', password='hanium1234', db='antmaking', charset='utf8')
-        cursor= conn.cursor()
-
         #로그아웃
         self.logout_btn.clicked.connect(self.logout_clicked)
 
@@ -35,10 +34,12 @@ class MainWindow(QMainWindow,form_class):
         self.renew_btn.clicked.connect(self.renew_clicked)
 
         #계좌정보 가져오기
-        account_num=self.kiwoom.dynamicCall("GetLoginInfo(QString)",["ACCNO"])
-        self.cmb_account.addItem(account_num.rstrip(';'))
+        global account_num
+        account_num=self.kiwoom.dynamicCall("GetLoginInfo(QString)",["ACCNO"]).rstrip(';')
+        self.cmb_account.addItem(account_num)
 
         #사용자명 가져오기
+        global user_name
         user_name=self.kiwoom.dynamicCall("GetLoginInfo(QString)","USER_NAME")
         self.lbl_user_name.setText(user_name)
 
@@ -52,24 +53,11 @@ class MainWindow(QMainWindow,form_class):
         self.tradeASC_rd.clicked.connect(self.groupboxRadFunction)
         self.tradeDESC_rd.clicked.connect(self.groupboxRadFunction)
 
-        # DB연결
-        
-        '''
-        conn=pymysql.connect(host='localhost', user='admin_ant', password='hanium1234', db='antmaking', charset='utf8')
-        cursor= conn.cursor()
-           
-        sql="INSERT INTO User_id (user_name, account, opt) values (%s, %s, %s)"
-
-        cursor.execute(sql,(user_name,account_num.rstrip(';'),str(optVal)))
-        conn.commit()
-        conn.close()
-        '''
-
         #옵션 저장
         self.optSave_btn.clicked.connect(self.optSave_clicked)
 
         #예수금
-        self.kiwoom.set_input_value("계좌번호",account_num.rstrip(';'))
+        self.kiwoom.set_input_value("계좌번호",account_num)
         self.kiwoom.set_input_value("비밀번호","0000")
         self.kiwoom.comm_rq_data("opw00001_req","opw00001",0,"2000")
         
@@ -80,7 +68,7 @@ class MainWindow(QMainWindow,form_class):
         self.kiwoom.set_input_value("계좌번호",account_num.rstrip(';'))
         self.kiwoom.comm_rq_data("opw00018_req","opw00018",0,"2000")
 
-        self.lbl_purchase.setTexst(self.kiwoom.opw00018_output['single'][0]) #총매입
+        self.lbl_purchase.setText(self.kiwoom.opw00018_output['single'][0]) #총매입
         self.lbl_eval_amt.setText(self.kiwoom.opw00018_output['single'][1]) #총평가
         self.lbl_profitLoss.setText(self.kiwoom.opw00018_output['single'][2]) #총손익
         self.lbl_ror.setText(self.kiwoom.opw00018_output['single'][3]) #총수익률
@@ -91,9 +79,13 @@ class MainWindow(QMainWindow,form_class):
         kospi_code_list=code_list.split(';')
         kospi_code_name_list=[]
 
+        global kospi_dict
+        kospi_dict=dict()
+
         for x in kospi_code_list:
             name=self.kiwoom.dynamicCall("GetMasterCodeName(QString)",[x])
             kospi_code_name_list.append(name)
+            kospi_dict[name]=x
         
         name_completer=QCompleter(kospi_code_name_list)
         self.lineEdit.setCompleter(name_completer)
@@ -101,9 +93,75 @@ class MainWindow(QMainWindow,form_class):
         code_completer=QCompleter(kospi_code_list)
         self.lineEdit_2.setCompleter(code_completer)
 
+        # 종목 검색 받아오기
+        self.nameSearch_btn.clicked.connect(self.codeSearch_clicked)
+        self.codeSearch_btn.clicked.connect(self.codeSearch_clicked2)
+
         # 보유자산 종목 관리
         self.check_balance()
     
+    #  종목명 검색
+    def codeSearch_clicked(self):
+        global kospi_dict
+        codeName=self.lineEdit.text()
+        
+        self.ItemSearchBox.setTitle(kospi_dict[codeName])
+        address='https://finance.naver.com/item/sise.nhn?code='+kospi_dict[codeName]
+
+        web=requests.get(address)
+        soup=BeautifulSoup(web.content,"html.parser")
+
+        nowVal=soup.find(id='_nowVal').get_text().strip() #현재가
+        diff=soup.find('span',class_='tah p11 nv01').get_text().strip() #전일비
+        rate=soup.find(id='_rate').get_text().strip() #등락률
+        quant=soup.find(id='_quant').get_text().strip() #거래량
+        start=soup.find('span',class_='tah p11').get_text().strip() #시가
+        high=soup.find(id='_high').get_text().strip() #고가
+        low=soup.find(id='_low').get_text().strip() #저가
+        gurae=soup.find(id='_amount').get_text().strip() #거래대금
+
+        self.lbl_nowVal.setText(nowVal)
+        self.lbl_difference.setText(str(abs(int(nowVal)-int(diff)))+'|')
+        self.lbl_rate.setText(rate)
+        self.lbl_diff.setText(diff)
+        self.lbl_start.setText(start)
+        self.lbl_high.setText(high)
+        self.lbl_low.setText(low)
+        self.lbl_quant.setText(quant)
+        self.lbl_gurae.setText(gurae)
+
+        # 그 뭐시냐 중간에 컴마 들어가서 숫자아님 수정할것 ㅋ
+        
+    # 종목 코드 검색
+    def codeSearch_clicked2(self):
+        code=self.lineEdit_2.text()
+        c_name=self.kiwoom.dynamicCall("GetMasterCodeName(QString)",[code])
+        self.ItemSearchBox.setTitle(c_name)
+        address="https://finance.naver.com/item/sise.nhn?code="+code
+
+        web=requests.get(address)
+        soup=BeautifulSoup(web.content,"html.parser")
+
+        nowVal=soup.find(id='_nowVal').get_text().strip() #현재가
+        diff=soup.find('span',class_='tah p11 nv01').get_text().strip() #전일비
+        rate=soup.find(id='_rate').get_text().strip() #등락률
+        quant=soup.find(id='_quant').get_text().strip() #거래량
+        start=soup.find('span',class_='tah p11').get_text().strip() #시가
+        high=soup.find(id='_high').get_text().strip() #고가
+        low=soup.find(id='_low').get_text().strip() #저가
+        gurae=soup.find(id='_amount').get_text().strip() #거래대금
+
+        self.lbl_nowVal.setText(nowVal)
+        self.lbl_difference.setText(str(abs(int(nowVal)-int(diff)))+'|')
+        self.lbl_rate.setText(rate)
+        self.lbl_diff.setText(diff)
+        self.lbl_start.setText(start)
+        self.lbl_high.setText(high)
+        self.lbl_low.setText(low)
+        self.lbl_quant.setText(quant)
+        self.lbl_gurae.setText(gurae)
+
+
     def check_balance(self):
         # 총 자산관리
         item=QTableWidgetItem(self.kiwoom.d2_deposit)
@@ -129,6 +187,8 @@ class MainWindow(QMainWindow,form_class):
         self.have_table.resizeRowsToContents()
     
     def optSave_clicked(self):
+        global optVal
+
         if optVal==1:
             print("급등")
         elif optVal==2:
