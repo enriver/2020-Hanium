@@ -9,6 +9,8 @@ from Kiwoom import *
 import datetime
 import requests
 from bs4 import BeautifulSoup
+import time
+import pandas as pd
 #import pymysql
 
 form_class=uic.loadUiType("main.ui")[0]
@@ -75,22 +77,28 @@ class MainWindow(QMainWindow,form_class):
         self.lbl_asset.setText(self.kiwoom.opw00018_output['single'][4]) #총자산
 
         #종목 자동완성
-        code_list=self.kiwoom.dynamicCall("GetCodeListByMarket(QString)",["0"])
+        code_list=self.kiwoom.dynamicCall("GetCodeListByMarket(QString)",["0"]) #코스피
+        code_list2=self.kiwoom.dynamicCall("GetCodeListByMarket(QString)",["10"]) #코스닥
+
         kospi_code_list=code_list.split(';')
-        kospi_code_name_list=[]
+        kosdaq_code_list=code_list2.split(';')
+        total_code_list=kospi_code_list+kosdaq_code_list
 
-        global kospi_dict
-        kospi_dict=dict()
+        total_code_name_list=[]
 
-        for x in kospi_code_list:
+        global code_dict
+        code_dict=dict()
+
+        for x in total_code_list:
             name=self.kiwoom.dynamicCall("GetMasterCodeName(QString)",[x])
-            kospi_code_name_list.append(name)
-            kospi_dict[name]=x
+            total_code_name_list.append(name)
+            code_dict[name]=x
+
         
-        name_completer=QCompleter(kospi_code_name_list)
+        name_completer=QCompleter(total_code_name_list)
         self.lineEdit.setCompleter(name_completer)
 
-        code_completer=QCompleter(kospi_code_list)
+        code_completer=QCompleter(total_code_list)
         self.lineEdit_2.setCompleter(code_completer)
 
         # 종목 검색 받아오기
@@ -102,65 +110,184 @@ class MainWindow(QMainWindow,form_class):
     
     #  종목명 검색
     def codeSearch_clicked(self):
-        global kospi_dict
-        codeName=self.lineEdit.text()
+        global code_dict
+        codeName=self.lineEdit.text().strip()
+
+        if codeName=="" or codeName not in code_dict:
+            reply=QMessageBox.information(self,"알림","종목명을 제대로 입력해주세요",QMessageBox.Yes)
+
+        else:
+            self.ItemSearchBox.setTitle(codeName)
+            address='https://finance.naver.com/item/sise.nhn?code='+code_dict[codeName]
+
+            web=requests.get(address)
+            soup=BeautifulSoup(web.content,"html.parser")
+
+            nowVal=soup.find(id='_nowVal').get_text().strip() #현재가
+            rate=soup.find(id='_rate').get_text().strip() #등락률
+            quant=soup.find(id='_quant').get_text().strip() #거래량
+            start=soup.find('span',class_='tah p11').get_text().strip() #시가
+            high=soup.find(id='_high').get_text().strip() #고가
+            low=soup.find(id='_low').get_text().strip() #저가
+            gurae=soup.find(id='_amount').get_text().strip() #거래대금
+
+            diff=soup.find('td', class_='first')
+            diff_=diff.find(class_='blind').get_text().strip() #전일
+
+            self.lbl_nowVal.setText(nowVal)
+            self.lbl_diff.setText(diff_)
+            self.lbl_rate.setText(rate)
+            self.lbl_start.setText(start)
+            self.lbl_high.setText(high)
+            self.lbl_low.setText(low)
+            self.lbl_quant.setText(quant)
+            self.lbl_gurae.setText(gurae)
+
+            diff_r=int(diff_.replace(",",""))
+            nowVal_r=int(nowVal.replace(",",""))
+
+            difference_=str(abs(diff_r-nowVal_r))
+            self.lbl_difference.setText(self.kiwoom.change_format(difference_))
+
+            qPixmapVar=QPixmap()
+
+            if rate[0]=='+':
+                qPixmapVar.load("up.jpg")
+                self.lbl_upDown.setPixmap(qPixmapVar)
+
+                font=QFont()
+                font.setFamily("Bahnschrift")
+                font.setPointSize(18)
+
+                self.lbl_nowVal.setFont(font)
+                self.lbl_nowVal.setStyleSheet("Color:red")
+                self.lbl_difference.setStyleSheet("Color:red")
+                self.lbl_rate.setStyleSheet("Color:red")
+            elif rate[0]=='-':
+                qPixmapVar.load("down.jpg")
+                self.lbl_upDown.setPixmap(qPixmapVar)
+
+                font=QFont()
+                font.setFamily("Bahnschrift")
+                font.setPointSize(18)
+                self.lbl_nowVal.setFont(font)
+
+                self.lbl_nowVal.setStyleSheet("Color:blue")
+                self.lbl_difference.setStyleSheet("Color:blue")
+                self.lbl_rate.setStyleSheet("Color:blue")
+            else:
+                qPixmapVar.load("none.jpg")
+                self.lbl_upDown.setPixmap(qPixmapVar)
+
+                font=QFont()
+                font.setFamily("Bahnscrhift")
+                font.setPointSize(18)
+                self.lbl_nowVal.setFont(font)
+
+                self.lbl_nowVal.setStyleSheet("Color:Black")
         
-        self.ItemSearchBox.setTitle(kospi_dict[codeName])
-        address='https://finance.naver.com/item/sise.nhn?code='+kospi_dict[codeName]
+            
 
-        web=requests.get(address)
-        soup=BeautifulSoup(web.content,"html.parser")
-
-        nowVal=soup.find(id='_nowVal').get_text().strip() #현재가
-        diff=soup.find('span',class_='tah p11 nv01').get_text().strip() #전일비
-        rate=soup.find(id='_rate').get_text().strip() #등락률
-        quant=soup.find(id='_quant').get_text().strip() #거래량
-        start=soup.find('span',class_='tah p11').get_text().strip() #시가
-        high=soup.find(id='_high').get_text().strip() #고가
-        low=soup.find(id='_low').get_text().strip() #저가
-        gurae=soup.find(id='_amount').get_text().strip() #거래대금
-
-        self.lbl_nowVal.setText(nowVal)
-        self.lbl_difference.setText(str(abs(int(nowVal)-int(diff)))+'|')
-        self.lbl_rate.setText(rate)
-        self.lbl_diff.setText(diff)
-        self.lbl_start.setText(start)
-        self.lbl_high.setText(high)
-        self.lbl_low.setText(low)
-        self.lbl_quant.setText(quant)
-        self.lbl_gurae.setText(gurae)
-
-        # 그 뭐시냐 중간에 컴마 들어가서 숫자아님 수정할것 ㅋ
-        
     # 종목 코드 검색
     def codeSearch_clicked2(self):
-        code=self.lineEdit_2.text()
-        c_name=self.kiwoom.dynamicCall("GetMasterCodeName(QString)",[code])
-        self.ItemSearchBox.setTitle(c_name)
-        address="https://finance.naver.com/item/sise.nhn?code="+code
+        global code_dict
+        code=self.lineEdit_2.text().strip()
 
-        web=requests.get(address)
-        soup=BeautifulSoup(web.content,"html.parser")
+        c_name=''
+        for key, values in code_dict.items():
+            if values==code:
+                c_name=key
+                break
 
-        nowVal=soup.find(id='_nowVal').get_text().strip() #현재가
-        diff=soup.find('span',class_='tah p11 nv01').get_text().strip() #전일비
-        rate=soup.find(id='_rate').get_text().strip() #등락률
-        quant=soup.find(id='_quant').get_text().strip() #거래량
-        start=soup.find('span',class_='tah p11').get_text().strip() #시가
-        high=soup.find(id='_high').get_text().strip() #고가
-        low=soup.find(id='_low').get_text().strip() #저가
-        gurae=soup.find(id='_amount').get_text().strip() #거래대금
+        if code=='' or c_name=='':
+            reply=QMessageBox.information(self,"알림","종목코드를 제대로 입력해주세요",QMessageBox.Yes)
+        else:
+            self.ItemSearchBox.setTitle(c_name)
+            address="https://finance.naver.com/item/sise.nhn?code="+code
 
-        self.lbl_nowVal.setText(nowVal)
-        self.lbl_difference.setText(str(abs(int(nowVal)-int(diff)))+'|')
-        self.lbl_rate.setText(rate)
-        self.lbl_diff.setText(diff)
-        self.lbl_start.setText(start)
-        self.lbl_high.setText(high)
-        self.lbl_low.setText(low)
-        self.lbl_quant.setText(quant)
-        self.lbl_gurae.setText(gurae)
+            web=requests.get(address)
+            soup=BeautifulSoup(web.content,"html.parser")
 
+            nowVal=soup.find(id='_nowVal').get_text().strip() #현재가
+            rate=soup.find(id='_rate').get_text().strip() #등락률
+            quant=soup.find(id='_quant').get_text().strip() #거래량
+            start=soup.find('span',class_='tah p11').get_text().strip() #시가
+            high=soup.find(id='_high').get_text().strip() #고가
+            low=soup.find(id='_low').get_text().strip() #저가
+            gurae=soup.find(id='_amount').get_text().strip() #거래대금
+
+            diff=soup.find('td', class_='first')
+            diff_=diff.find(class_='blind').get_text().strip() #전일
+
+            diff_r=int(diff_.replace(",",""))
+            nowVal_r=int(nowVal.replace(",",""))
+
+            difference_=str(abs(diff_r-nowVal_r))
+            self.lbl_difference.setText(self.kiwoom.change_format(difference_))
+
+            self.lbl_nowVal.setText(nowVal)
+            self.lbl_rate.setText(rate)
+            self.lbl_diff.setText(diff_)
+            self.lbl_start.setText(start)
+            self.lbl_high.setText(high)
+            self.lbl_low.setText(low)
+            self.lbl_quant.setText(quant)
+            self.lbl_gurae.setText(gurae)
+
+            qPixmapVar=QPixmap()
+
+            if rate[0]=='+':
+                qPixmapVar.load("up.jpg")
+                self.lbl_upDown.setPixmap(qPixmapVar)
+
+                font=QFont()
+                font.setFamily("Bahnschrift")
+                font.setPointSize(18)
+                self.lbl_nowVal.setFont(font)
+
+                self.lbl_nowVal.setStyleSheet("Color:red")
+                self.lbl_difference.setStyleSheet("Color:red")
+                self.lbl_rate.setStyleSheet("Color:red")
+            elif rate[0]=='-':
+                qPixmapVar.load("down.jpg")
+                self.lbl_upDown.setPixmap(qPixmapVar)
+
+                font=QFont()
+                font.setFamily("Bahnschrift")
+                font.setPointSize(18)
+                self.lbl_nowVal.setFont(font)
+
+                self.lbl_nowVal.setStyleSheet("Color:blue")
+                self.lbl_difference.setStyleSheet("Color:blue")
+                self.lbl_rate.setStyleSheet("Color:blue")
+            
+            else:
+                qPixmapVar.load("none.jpg")
+                self.lbl_upDown.setPixmap(qPixmapVar)
+
+                font=QFont()
+                font.setFamily("Bahnscrhift")
+                font.setPointSize(18)
+                self.lbl_nowVal.setFont(font)
+
+                self.lbl_nowVal.setStyleSheet("Color:Black")
+
+            now=datetime.datetime.now()
+            nowDate=now.strftime("%Y%m%d")
+
+            
+            self.kiwoom.set_input_value("종목코드",code)
+            self.kiwoom.set_input_value("기준일자",nowDate)
+            self.kiwoom.set_input_value("수정주가구분",1)
+            self.kiwoom.comm_rq_data("opt10081_req","opt10081",0,"0101")
+
+            while self.kiwoom.remained_data==True:
+                time.sleep(0.2)
+                self.kiwoom.set_input_value("종목코드",code)
+                self.kiwoom.set_input_value("기준일자",nowDate)
+                self.kiwoom.set_input_value("수정주가구분",1)
+                self.kiwoom.comm_rq_data("opt10081_req","opt10081",2,"0101")
+            
 
     def check_balance(self):
         # 총 자산관리
