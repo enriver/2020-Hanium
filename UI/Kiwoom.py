@@ -39,7 +39,6 @@ class Kiwoom(QAxWidget):
 
     def _event_connect(self, err_code):
         if err_code == 0:
-
             print("connected")
           
         else:
@@ -141,7 +140,13 @@ class Kiwoom(QAxWidget):
             close=self._comm_get_data(trcode,"",rqname,i,"현재가")
             volume=self._comm_get_data(trcode,"",rqname,i,"거래량")
 
-            print(date, open, high, low, close, volume)
+            self.ohlcv['date'].append(date)
+            self.ohlcv['open'].append(int(open))
+            self.ohlcv['high'].append(int(high))
+            self.ohlcv['low'].append(int(low))
+            self.ohlcv['close'].append(int(close))
+            self.ohlcv['volume'].append(int(volume))
+            
             
 
     def get_server_gubun(self):

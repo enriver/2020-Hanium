@@ -186,7 +186,12 @@ class MainWindow(QMainWindow,form_class):
 
                 self.lbl_nowVal.setStyleSheet("Color:Black")
         
-            
+            now=datetime.datetime.now()
+            nowDate=now.strftime("%Y%m%d")
+
+            #데이터프레임
+            stock=self.get_ohlcv(code_dict[codeName],nowDate)
+            print(stock)
 
     # 종목 코드 검색
     def codeSearch_clicked2(self):
@@ -275,19 +280,28 @@ class MainWindow(QMainWindow,form_class):
             now=datetime.datetime.now()
             nowDate=now.strftime("%Y%m%d")
 
-            
-            self.kiwoom.set_input_value("종목코드",code)
-            self.kiwoom.set_input_value("기준일자",nowDate)
-            self.kiwoom.set_input_value("수정주가구분",1)
-            self.kiwoom.comm_rq_data("opt10081_req","opt10081",0,"0101")
+            #데이터프레임
+            stock=self.get_ohlcv(code,nowDate)
+            print(stock)
 
-            while self.kiwoom.remained_data==True:
-                time.sleep(0.2)
-                self.kiwoom.set_input_value("종목코드",code)
-                self.kiwoom.set_input_value("기준일자",nowDate)
-                self.kiwoom.set_input_value("수정주가구분",1)
-                self.kiwoom.comm_rq_data("opt10081_req","opt10081",2,"0101")
-            
+    def get_ohlcv(self, code,start):
+        self.kiwoom.ohlcv={'date':[],'open':[],'high':[],'low':[],'close':[],'volume':[]}
+
+        self.kiwoom.set_input_value("종목코드",code)
+        self.kiwoom.set_input_value("기준일자",start)
+        self.kiwoom.set_input_value("수정주가구분",1)
+        self.kiwoom.comm_rq_data("opt10081_req","opt10081",0,"0101")
+
+        while self.kiwoom.remained_data==True:
+            time.sleep(0.2)
+            self.kiwoom.set_input_value("종목코드",code)
+            self.kiwoom.set_input_value("기준일자",start)
+            self.kiwoom.set_input_value("수정주가구분",1)
+            self.kiwoom.comm_rq_data("opt10081_req","opt10081",2,"0101")
+
+        df=pd.DataFrame(self.kiwoom.ohlcv, columns=['open','high','low','close','volume'], index=self.kiwoom.ohlcv['date'])
+
+        return df
 
     def check_balance(self):
         # 총 자산관리
