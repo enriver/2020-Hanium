@@ -107,7 +107,23 @@ class MainWindow(QMainWindow,form_class):
 
         # 보유자산 종목 관리
         self.check_balance()
-    
+
+        # 관심종목
+        self.interest_btn.clicked.connect(self.interest_add_clicked)
+
+    # 관심종목 추가
+    def interest_add_clicked(self):
+        global code_dict
+
+        interest_code=self.ItemSearchBox.text().strip()
+
+        if interest_code=='종목명' or interest_code not in code_dict:
+            reply=QMessageBox.information(self,"알림","올바른 종목명이 아닙니다",QMessageBox.Yes)
+        else:
+            item=QTableWidgetItem(interest_code)
+            item.setTextAlignment(Qt.AlignVCenter | Qt.AlignRight)
+            self.interest_table.setItem(0,0,item)
+
     #  종목명 검색
     def codeSearch_clicked(self):
         global code_dict
