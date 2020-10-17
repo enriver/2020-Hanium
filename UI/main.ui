@@ -1276,9 +1276,6 @@
         <property name="text">
          <string>종목명</string>
         </property>
-        <property name="textAlignment">
-         <set>AlignCenter</set>
-        </property>
        </column>
       </widget>
      </widget>

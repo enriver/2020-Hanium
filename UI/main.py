@@ -111,18 +111,40 @@ class MainWindow(QMainWindow,form_class):
         # 관심종목
         self.interest_btn.clicked.connect(self.interest_add_clicked)
 
+        # 관심종목 삭제
+        self.del_interest_btn.clicked.connect(self.interest_delete_clicked)
+
     # 관심종목 추가
     def interest_add_clicked(self):
         global code_dict
 
-        interest_code=self.ItemSearchBox.text().strip()
+        interest_code=self.ItemSearchBox.title()
+        print(interest_code)
+        
+        exist_interest=self.interest_table.findItems(interest_code, Qt.MatchContains)
 
         if interest_code=='종목명' or interest_code not in code_dict:
             reply=QMessageBox.information(self,"알림","올바른 종목명이 아닙니다",QMessageBox.Yes)
+
+        elif len(exist_interest)>0:
+            reply=QMessageBox.information(self,"알림","이미 관심종목으로 추가된 종목입니다.",QMessageBox.Yes)
         else:
+            num=self.interest_table.rowCount() ## 후에 DB에서 가져올 예정
+            self.interest_table.setRowCount(num+1)
             item=QTableWidgetItem(interest_code)
-            item.setTextAlignment(Qt.AlignVCenter | Qt.AlignRight)
-            self.interest_table.setItem(0,0,item)
+            self.interest_table.setItem(num,0,item)
+            self.interest_table.resizeRowsToContents()
+            self.interest_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
+    # 관심종목 삭제
+    def interest_delete_clicked(self):
+        select_interest=self.interest_table.currentRow()
+
+        if select_interest==-1:
+            reply=QMessageBox.information(self,"알림","삭제할 종목을 선택해주세요",QMessageBox.Yes)
+        else:
+            self.interest_table.removeRow(select_interest)
+            
 
     #  종목명 검색
     def codeSearch_clicked(self):
@@ -330,6 +352,7 @@ class MainWindow(QMainWindow,form_class):
             self.total_table.setItem(0,i+1,item)
 
         self.total_table.resizeRowsToContents()
+        self.total_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
         # 보유 종목 관리
         item_count=len(self.kiwoom.opw00018_output['multi'])
@@ -342,6 +365,7 @@ class MainWindow(QMainWindow,form_class):
                 item.setTextAlignment(Qt.AlignVCenter | Qt.AlignRight)
                 self.have_table.setItem(j,i,item)
         self.have_table.resizeRowsToContents()
+        self.have_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
     
     def optSave_clicked(self):
         global optVal
