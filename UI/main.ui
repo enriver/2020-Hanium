@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="mainTab">
      <attribute name="title">
@@ -276,7 +276,7 @@
         </rect>
        </property>
        <property name="text">
-        <string>저장</string>
+        <string>선택</string>
        </property>
       </widget>
       <widget class="QRadioButton" name="rapidUp_rd">
@@ -536,7 +536,7 @@
        <number>1</number>
       </property>
       <attribute name="horizontalHeaderDefaultSectionSize">
-       <number>75</number>
+       <number>82</number>
       </attribute>
       <column>
        <property name="text">
@@ -586,11 +586,6 @@
       <column>
        <property name="text">
         <string>예측값</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>예측률</string>
        </property>
       </column>
      </widget>
