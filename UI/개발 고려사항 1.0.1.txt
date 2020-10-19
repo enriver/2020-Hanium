@@ -18,3 +18,7 @@
    (Interset QtTableWidget)
    - 없을 시 : PASS
    - 있을 시 : SELECT * FROM ~
+
+5. 보유종목 관심종목 중복방지
+
+6. 관심종목 20개.

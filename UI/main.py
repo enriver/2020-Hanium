@@ -11,6 +11,10 @@ import requests
 from bs4 import BeautifulSoup
 import time
 import pandas as pd
+from bokeh.plotting import figure, save
+from math import pi
+import os
+
 #import pymysql
 
 form_class=uic.loadUiType("main.ui")[0]
@@ -229,7 +233,30 @@ class MainWindow(QMainWindow,form_class):
 
             #데이터프레임
             stock=self.get_ohlcv(code_dict[codeName],nowDate)
-            print(stock)
+            #print(stock)
+
+            inc=stock.close >= stock.open
+            dec=stock.open > stock.close
+            w=12*60*60*1000
+
+            stock['date']=pd.to_datetime(stock['date'])
+            
+            #캔들차트
+            candle=figure(plot_width=700, plot_height=225, x_axis_type="datetime", tools=['pan, xwheel_zoom','box_zoom','reset'])
+            candle.xaxis.major_label_orientation=pi/4
+            candle.grid.grid_line_alpha=0.3
+
+            candle.segment(stock.date, stock.high, stock.date, stock.low, color="black")
+            candle.vbar(stock.date[inc],w, stock.open[inc], stock.close[inc], fill_color="red", line_color="red")
+            candle.vbar(stock.date[dec],w, stock.open[dec], stock.close[dec], fill_color="blue", line_color="blue")
+            
+            save(candle, filename="candle.html")
+
+            url=os.getcwd()
+            url_changed=url.replace('\\','/')
+
+            self.webEngineView.load(QUrl(url_changed+"/candle.html"))
+
 
     # 종목 코드 검색
     def codeSearch_clicked2(self):
@@ -320,7 +347,29 @@ class MainWindow(QMainWindow,form_class):
 
             #데이터프레임
             stock=self.get_ohlcv(code,nowDate)
-            print(stock)
+            #print(stock)
+
+            inc=stock.close >= stock.open
+            dec=stock.open > stock.close
+            w=12*60*60*1000
+
+            stock['date']=pd.to_datetime(stock['date'])
+            
+            #캔들차트
+            candle=figure(plot_width=700, plot_height=225, x_axis_type="datetime", tools=['pan, xwheel_zoom','box_zoom','reset'])
+            candle.xaxis.major_label_orientation=pi/4
+            candle.grid.grid_line_alpha=0.3
+
+            candle.segment(stock.date, stock.high, stock.date, stock.low, color="black")
+            candle.vbar(stock.date[inc],w, stock.open[inc], stock.close[inc], fill_color="red", line_color="red")
+            candle.vbar(stock.date[dec],w, stock.open[dec], stock.close[dec], fill_color="blue", line_color="blue")
+            
+            save(candle, filename="candle.html")
+
+            url=os.getcwd()
+            url_changed=url.replace('\\','/')
+
+            self.webEngineView.load(QUrl(url_changed+"/candle.html"))
 
     def get_ohlcv(self, code,start):
         self.kiwoom.ohlcv={'date':[],'open':[],'high':[],'low':[],'close':[],'volume':[]}
@@ -337,9 +386,10 @@ class MainWindow(QMainWindow,form_class):
             self.kiwoom.set_input_value("수정주가구분",1)
             self.kiwoom.comm_rq_data("opt10081_req","opt10081",2,"0101")
 
-        df=pd.DataFrame(self.kiwoom.ohlcv, columns=['open','high','low','close','volume'], index=self.kiwoom.ohlcv['date'])
-
-        return df
+        df=pd.DataFrame(self.kiwoom.ohlcv, columns=['date','open','high','low','close','volume'])
+        #, index=self.kiwoom.ohlcv['date']
+        df_sorted=df.sort_values(by='date')
+        return df_sorted
 
     def check_balance(self):
         # 총 자산관리
