@@ -12,6 +12,8 @@ from bs4 import BeautifulSoup
 import time
 import pandas as pd
 from bokeh.plotting import figure, save
+from bokeh.models.formatters import NumeralTickFormatter
+from bokeh.models import HoverTool
 from math import pi
 import os
 
@@ -242,14 +244,18 @@ class MainWindow(QMainWindow,form_class):
             stock['date']=pd.to_datetime(stock['date'])
             
             #캔들차트
-            candle=figure(plot_width=700, plot_height=225, x_axis_type="datetime", tools=['pan, xwheel_zoom','box_zoom','reset'])
+            candle=figure(plot_width=700, plot_height=225, x_axis_type="datetime", tools=['pan, xwheel_zoom','box_zoom','reset','hover'])
             candle.xaxis.major_label_orientation=pi/4
+            candle.yaxis.formatter = NumeralTickFormatter(format='0,0')
             candle.grid.grid_line_alpha=0.3
 
             candle.segment(stock.date, stock.high, stock.date, stock.low, color="black")
             candle.vbar(stock.date[inc],w, stock.open[inc], stock.close[inc], fill_color="red", line_color="red")
             candle.vbar(stock.date[dec],w, stock.open[dec], stock.close[dec], fill_color="blue", line_color="blue")
             
+            hover=candle.select(dict(type=HoverTool))
+            hover.tooltips=[("Price","$y{0,0}")]  ## columnSource 뭐시기를 쓰면 hover가 가능하지만 하고싶지않은걸
+            hover.mode='mouse'
             save(candle, filename="candle.html")
 
             url=os.getcwd()
@@ -356,20 +362,25 @@ class MainWindow(QMainWindow,form_class):
             stock['date']=pd.to_datetime(stock['date'])
             
             #캔들차트
-            candle=figure(plot_width=700, plot_height=225, x_axis_type="datetime", tools=['pan, xwheel_zoom','box_zoom','reset'])
+            candle=figure(plot_width=700, plot_height=225, x_axis_type="datetime", tools=['pan, xwheel_zoom','box_zoom','reset','hover'])
             candle.xaxis.major_label_orientation=pi/4
+            candle.yaxis.formatter = NumeralTickFormatter(format='0,0')
             candle.grid.grid_line_alpha=0.3
 
             candle.segment(stock.date, stock.high, stock.date, stock.low, color="black")
             candle.vbar(stock.date[inc],w, stock.open[inc], stock.close[inc], fill_color="red", line_color="red")
             candle.vbar(stock.date[dec],w, stock.open[dec], stock.close[dec], fill_color="blue", line_color="blue")
             
+            hover=candle.select(dict(type=HoverTool))
+            hover.tooltips=[("Price","$y{0,0}")]  ## columnSource 뭐시기를 쓰면 hover가 가능하지만 하고싶지않은걸
+            hover.mode='mouse'
             save(candle, filename="candle.html")
 
             url=os.getcwd()
             url_changed=url.replace('\\','/')
 
             self.webEngineView.load(QUrl(url_changed+"/candle.html"))
+
 
     def get_ohlcv(self, code,start):
         self.kiwoom.ohlcv={'date':[],'open':[],'high':[],'low':[],'close':[],'volume':[]}
