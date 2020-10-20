@@ -6,6 +6,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5 import uic
 from Kiwoom import *
+from database import *
 import datetime
 import requests
 from bs4 import BeautifulSoup
@@ -50,6 +51,22 @@ class MainWindow(QMainWindow,form_class):
         global user_name
         user_name=self.kiwoom.dynamicCall("GetLoginInfo(QString)","USER_NAME")
         self.lbl_user_name.setText(user_name)
+
+        #DB 연결
+
+        self.db=database()
+
+        #초기 로그인 관심종목 받아오기
+        interest_list=list(self.db.interest_get(account_num))
+        
+        if len(interest_list) > 0:
+            self.interest_table.setRowCount(len(interest_list)+1)
+
+            for i in range(len(interest_list)):
+                item=QTableWidgetItem(interest_list[i])
+                self.interest_table.setItem(i,0,item)
+                self.interest_table.resizeRowsToContents()
+                self.interest_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
         #옵션 선택
         global optVal
@@ -114,7 +131,7 @@ class MainWindow(QMainWindow,form_class):
         # 보유자산 종목 관리
         self.check_balance()
 
-        # 관심종목
+        # 관심종목 추가
         self.interest_btn.clicked.connect(self.interest_add_clicked)
 
         # 관심종목 삭제
@@ -123,6 +140,7 @@ class MainWindow(QMainWindow,form_class):
     # 관심종목 추가
     def interest_add_clicked(self):
         global code_dict
+        global account_num
 
         interest_code=self.ItemSearchBox.title()
         print(interest_code)
@@ -139,6 +157,7 @@ class MainWindow(QMainWindow,form_class):
             self.interest_table.setRowCount(num+1)
             item=QTableWidgetItem(interest_code)
             self.interest_table.setItem(num,0,item)
+            self.db.interest_insert((account_num,interest_code))
             self.interest_table.resizeRowsToContents()
             self.interest_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
