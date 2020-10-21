@@ -1,7 +1,4 @@
 import pymysql
-import numpy as np
-import os
-import time
 import pandas as pd
 
 class database():

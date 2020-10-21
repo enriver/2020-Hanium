@@ -22,7 +22,115 @@ import os
 
 form_class=uic.loadUiType("main.ui")[0]
 
-    
+class buySellDialog(QDialog):
+    def __init__(self,codeName):
+        super().__init__()
+        self.codeName=codeName
+        self.setupUI()
+
+    def setupUI(self):
+        self.resize(250,280)
+        self.center()
+        self.setWindowTitle("매매")
+
+        label1 = QLabel("계좌")
+        label2 = QLabel("주문")
+        label3 = QLabel("종목코드")
+        label4 = QLabel("종목명")
+        label5 = QLabel("종류")
+        label6 = QLabel("수량")
+        label7 = QLabel("가격")
+        
+        label_blank=QLabel("    ")
+        self.label_blank2=QLabel("    ")
+        label_blank3=QLabel("    ")
+        self.label_blank4=QLabel("    ")
+
+
+        self.cmb_account=QComboBox(self)
+        self.cmb_account.addItem(account_num) #계좌번호 받아오기
+
+        self.cmb_order=QComboBox(self)
+        self.cmb_order.addItem("신규매수")
+        self.cmb_order.addItem("신규매도")
+        self.cmb_order.addItem("매수취소")
+        self.cmb_order.addItem("매도취소")
+
+
+        self.label_code=QLabel(code_dict[self.codeName]) #종목코드 받아오기 
+        self.label_codeName=QLabel(self.codeName) #종목명 받아오기 
+
+        self.cmb_kinds=QComboBox(self)
+        self.cmb_kinds.addItem("지정가")
+        self.cmb_kinds.addItem("시장가")
+
+        self.spin_num=QSpinBox(self)
+        self.spin_num.setMinimum(0)
+        self.spin_num.setMaximum(1000)
+
+        self.spin_price=QSpinBox(self)
+        self.spin_price.setMinimum(0)
+        self.spin_price.setMaximum(1000000)
+
+        self.orderButton=QPushButton("현금주문")
+        self.orderButton.clicked.connect(self.send_order)
+        
+
+        layout = QGridLayout()
+        layout.addWidget(label1, 0, 0)
+        layout.addWidget(label2, 1, 0)
+        layout.addWidget(label3, 2, 0)
+        layout.addWidget(label4, 3, 0)
+        layout.addWidget(label_blank,4,0)
+        layout.addWidget(label5, 5, 0)
+        layout.addWidget(label6, 6, 0)
+        layout.addWidget(label7, 7, 0)
+        layout.addWidget(label_blank3, 8, 0)
+        layout.addWidget(self.orderButton,9,0)
+
+        layout.addWidget(self.cmb_account, 0, 1)
+        layout.addWidget(self.cmb_order, 1, 1)
+        layout.addWidget(self.label_code, 2, 1)
+        layout.addWidget(self.label_codeName, 3, 1)
+        layout.addWidget(self.label_blank2,4,1)
+        layout.addWidget(self.cmb_kinds, 5, 1)
+        layout.addWidget(self.spin_num, 6, 1)
+        layout.addWidget(self.spin_price, 7, 1)
+        layout.addWidget(self.label_blank4,8,1)
+
+        self.setLayout(layout)  
+
+    # Dialog 중앙배치
+    def center(self):
+        qr=self.frameGeometry()
+        cp=QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
+
+    # 매매함수
+    def send_order(self):
+        order_type_lookup = {'신규매수': 1, '신규매도': 2, '매수취소': 3, '매도취소': 4}
+        hoga_lookup = {'지정가': "00", '시장가': "03"}
+
+        account = self.cmb_account.currentText()
+        order_type = self.cmb_order.currentText()
+        code = self.label_code.text()
+        hoga = self.cmb_kinds.currentText()
+        num = self.spin_num.value()
+        price = self.spin_price.value()
+
+        '''
+        print(account)
+        print(order_type)
+        print(code)
+        print(hoga)
+        print(num)
+        print(price)
+        '''
+
+        self.kiwoom.send_order("send_order_req", "0101", account, order_type_lookup[order_type], code, num, price, hoga_lookup[hoga], "")
+        
+
 class MainWindow(QMainWindow,form_class):
     def __init__(self):
         super().__init__()
@@ -54,8 +162,9 @@ class MainWindow(QMainWindow,form_class):
 
         #DB 연결
 
-        self.db=database()
+        #self.db=database()
 
+        '''
         #초기 로그인 관심종목 받아오기
         interest_list=list(self.db.interest_get(account_num))
         
@@ -67,6 +176,8 @@ class MainWindow(QMainWindow,form_class):
                 self.interest_table.setItem(i,0,item)
                 self.interest_table.resizeRowsToContents()
                 self.interest_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+    
+        '''
 
         #옵션 선택
         global optVal
@@ -137,6 +248,44 @@ class MainWindow(QMainWindow,form_class):
         # 관심종목 삭제
         self.del_interest_btn.clicked.connect(self.interest_delete_clicked)
 
+        # 매매
+        self.buySell_btn_1.clicked.connect(self.buySellClicked1)
+        self.buySell_btn_2.clicked.connect(self.buySellClicked2)
+        self.buySell_btn_3.clicked.connect(self.buySellClicked3)
+        
+    # 메인화면 매매
+    def buySellClicked1(self):
+        select_code=self.main_table.currentRow()
+
+        if select_code==-1:
+            reply=QMessageBox.information(self,"알림","매매할 종목을 선택해주세요",QMessageBox.Yes) 
+        else:
+            dlg = buySellDialog()
+            dlg.exec_()
+        
+    # 검색된 종목 매매
+    def buySellClicked2(self):
+        global code_dict
+        select_code=self.ItemSearchBox.title()
+
+        if select_code == '종목명' or select_code not in code_dict:
+            reply=QMessageBox.information(self,"알림","종목 검색 후 매매를 시도하세요",QMessageBox.Yes)
+        else:
+            dlg = buySellDialog(select_code)
+            dlg.exec_()
+            
+    
+    # 보유종목 매매
+    def buySellClicked3(self):
+        select_code=self.have_table.currentRow()
+
+        if select_code==-1:
+            reply=QMessageBox.information(self,"알림","매매할 종목을 선택해주세요",QMessageBox.Yes)
+        else:
+            dlg = buySellDialog()
+            dlg.exec_()
+        
+
     # 관심종목 추가
     def interest_add_clicked(self):
         global code_dict
@@ -157,7 +306,7 @@ class MainWindow(QMainWindow,form_class):
             self.interest_table.setRowCount(num+1)
             item=QTableWidgetItem(interest_code)
             self.interest_table.setItem(num,0,item)
-            self.db.interest_insert((account_num,interest_code))
+            #self.db.interest_insert((account_num,interest_code))
             self.interest_table.resizeRowsToContents()
             self.interest_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
 

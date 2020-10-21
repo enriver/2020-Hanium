@@ -147,16 +147,17 @@ class Kiwoom(QAxWidget):
             self.ohlcv['close'].append(int(close))
             self.ohlcv['volume'].append(int(volume))
             
-            
-
     def get_server_gubun(self):
         ret=self.dynamicCall("KOA_Functions(QString,QString)","GetServerGubun","")
         return ret
 
+    def send_order(self, rqname, screen_no, acc_no, order_type, code, quantity, price, hoga, order_no):
+        self.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",[rqname, screen_no, acc_no, order_type, code, quantity, price, hoga, order_no])
+
     @staticmethod
     def change_format(data):
         strip_data=data.lstrip('-0')
-        if strip_data=='':
+        if strip_data=='':  
             strip_data='0'
 
         try:

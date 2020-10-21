@@ -24,13 +24,13 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="mainTab">
      <attribute name="title">
       <string>메인</string>
      </attribute>
-     <widget class="QPushButton" name="buySell_btn">
+     <widget class="QPushButton" name="buySell_btn_1">
       <property name="geometry">
        <rect>
         <x>380</x>
@@ -1210,7 +1210,7 @@
         </property>
        </column>
       </widget>
-      <widget class="QPushButton" name="pushButton_3">
+      <widget class="QPushButton" name="buySell_btn_3">
        <property name="geometry">
         <rect>
          <x>250</x>
