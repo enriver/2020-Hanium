@@ -22,115 +22,6 @@ import os
 
 form_class=uic.loadUiType("main.ui")[0]
 
-class buySellDialog(QDialog):
-    def __init__(self,codeName):
-        super().__init__()
-        self.codeName=codeName
-        self.setupUI()
-
-    def setupUI(self):
-        self.resize(250,280)
-        self.center()
-        self.setWindowTitle("매매")
-
-        label1 = QLabel("계좌")
-        label2 = QLabel("주문")
-        label3 = QLabel("종목코드")
-        label4 = QLabel("종목명")
-        label5 = QLabel("종류")
-        label6 = QLabel("수량")
-        label7 = QLabel("가격")
-        
-        label_blank=QLabel("    ")
-        self.label_blank2=QLabel("    ")
-        label_blank3=QLabel("    ")
-        self.label_blank4=QLabel("    ")
-
-
-        self.cmb_account=QComboBox(self)
-        self.cmb_account.addItem(account_num) #계좌번호 받아오기
-
-        self.cmb_order=QComboBox(self)
-        self.cmb_order.addItem("신규매수")
-        self.cmb_order.addItem("신규매도")
-        self.cmb_order.addItem("매수취소")
-        self.cmb_order.addItem("매도취소")
-
-
-        self.label_code=QLabel(code_dict[self.codeName]) #종목코드 받아오기 
-        self.label_codeName=QLabel(self.codeName) #종목명 받아오기 
-
-        self.cmb_kinds=QComboBox(self)
-        self.cmb_kinds.addItem("지정가")
-        self.cmb_kinds.addItem("시장가")
-
-        self.spin_num=QSpinBox(self)
-        self.spin_num.setMinimum(0)
-        self.spin_num.setMaximum(1000)
-
-        self.spin_price=QSpinBox(self)
-        self.spin_price.setMinimum(0)
-        self.spin_price.setMaximum(1000000)
-
-        self.orderButton=QPushButton("현금주문")
-        self.orderButton.clicked.connect(self.send_order)
-        
-
-        layout = QGridLayout()
-        layout.addWidget(label1, 0, 0)
-        layout.addWidget(label2, 1, 0)
-        layout.addWidget(label3, 2, 0)
-        layout.addWidget(label4, 3, 0)
-        layout.addWidget(label_blank,4,0)
-        layout.addWidget(label5, 5, 0)
-        layout.addWidget(label6, 6, 0)
-        layout.addWidget(label7, 7, 0)
-        layout.addWidget(label_blank3, 8, 0)
-        layout.addWidget(self.orderButton,9,0)
-
-        layout.addWidget(self.cmb_account, 0, 1)
-        layout.addWidget(self.cmb_order, 1, 1)
-        layout.addWidget(self.label_code, 2, 1)
-        layout.addWidget(self.label_codeName, 3, 1)
-        layout.addWidget(self.label_blank2,4,1)
-        layout.addWidget(self.cmb_kinds, 5, 1)
-        layout.addWidget(self.spin_num, 6, 1)
-        layout.addWidget(self.spin_price, 7, 1)
-        layout.addWidget(self.label_blank4,8,1)
-
-        self.setLayout(layout)  
-
-    # Dialog 중앙배치
-    def center(self):
-        qr=self.frameGeometry()
-        cp=QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.move(qr.topLeft())
-
-    # 매매함수
-    def send_order(self):
-        order_type_lookup = {'신규매수': 1, '신규매도': 2, '매수취소': 3, '매도취소': 4}
-        hoga_lookup = {'지정가': "00", '시장가': "03"}
-
-        account = self.cmb_account.currentText()
-        order_type = self.cmb_order.currentText()
-        code = self.label_code.text()
-        hoga = self.cmb_kinds.currentText()
-        num = self.spin_num.value()
-        price = self.spin_price.value()
-
-        '''
-        print(account)
-        print(order_type)
-        print(code)
-        print(hoga)
-        print(num)
-        print(price)
-        '''
-
-        self.kiwoom.send_order("send_order_req", "0101", account, order_type_lookup[order_type], code, num, price, hoga_lookup[hoga], "")
-        
-
 class MainWindow(QMainWindow,form_class):
     def __init__(self):
         super().__init__()
@@ -160,9 +51,13 @@ class MainWindow(QMainWindow,form_class):
         user_name=self.kiwoom.dynamicCall("GetLoginInfo(QString)","USER_NAME")
         self.lbl_user_name.setText(user_name)
 
-        #DB 연결
+        #Dialog 불러오기
+        self.dialog=uic.loadUi("trade.ui")
+        self.dialog.cmb_account.addItem(account_num) #계좌번호 받아오기
+        self.dialog.cmb_order.currentIndexChanged.connect(self.order_set)
+        self.dialog.cmb_kinds.currentIndexChanged.connect(self.kinds_set)
 
-        #self.db=database()
+        self.dialog.btn_order.clicked.connect(self.send_order)
 
         '''
         #초기 로그인 관심종목 받아오기
@@ -252,7 +147,7 @@ class MainWindow(QMainWindow,form_class):
         self.buySell_btn_1.clicked.connect(self.buySellClicked1)
         self.buySell_btn_2.clicked.connect(self.buySellClicked2)
         self.buySell_btn_3.clicked.connect(self.buySellClicked3)
-        
+
     # 메인화면 매매
     def buySellClicked1(self):
         select_code=self.main_table.currentRow()
@@ -266,15 +161,18 @@ class MainWindow(QMainWindow,form_class):
     # 검색된 종목 매매
     def buySellClicked2(self):
         global code_dict
+
         select_code=self.ItemSearchBox.title()
 
         if select_code == '종목명' or select_code not in code_dict:
             reply=QMessageBox.information(self,"알림","종목 검색 후 매매를 시도하세요",QMessageBox.Yes)
         else:
-            dlg = buySellDialog(select_code)
-            dlg.exec_()
+            self.dialog.label_code.setText(code_dict[select_code]) #종목코드 받아오기 
+            self.dialog.label_codeName.setText(select_code) #종목명 받아오기 
+            self.dialog.show()
+            #dlg = buySellDialog(select_code,nowVal)
+            #dlg.exec_()
             
-    
     # 보유종목 매매
     def buySellClicked3(self):
         select_code=self.have_table.currentRow()
@@ -284,8 +182,48 @@ class MainWindow(QMainWindow,form_class):
         else:
             dlg = buySellDialog()
             dlg.exec_()
-        
 
+    # 매매함수
+    def send_order(self):
+        order_type_lookup = {'신규매수': 1, '신규매도': 2, '매수취소': 3, '매도취소': 4}
+        hoga_lookup = {'지정가': "00", '시장가': "03"}
+
+        account = self.dialog.cmb_account.currentText()
+        order_type = self.dialog.cmb_order.currentText()
+        code = self.dialog.label_code.text()
+        hoga = self.dialog.cmb_kinds.currentText()
+        num = self.dialog.spin_num.value()
+        price = self.dialog.spin_price.value()
+
+        order_no=''
+        # 시장가를 선택했을 경우 현재가를 반환해줄것 __init__ self로 구현하면 편할듯
+
+        if order_type=='신규매수':
+            if num<1:
+                reply=QMessageBox.information(self,"알림","1주 이상 신청할 수 있습니다.",QMessageBox.Yes) 
+            else:
+                self.kiwoom.send_order("send_order_req", "0101", account, order_type_lookup[order_type], code, num, price, hoga_lookup[hoga], order_no)
+                reply=QMessageBox.information(self,"알림","<"+self.dialog.label_codeName.text()+"> 를 "+str(num)+"주 신규매수 신청하였습니다.",QMessageBox.Yes) 
+
+        elif order_type=='신규매도':
+            if num<1:
+                reply=QMessageBox.information(self,"알림","1주 이상 신청할 수 있습니다.",QMessageBox.Yes) 
+            else:
+                self.kiwoom.send_order("send_order_req", "0101", account, order_type_lookup[order_type], code, num, price, hoga_lookup[hoga], order_no)
+                reply=QMessageBox.information(self,"알림","<"+self.dialog.label_codeName.text()+"> 를 "+str(num)+"주 신규매도 신청하였습니다.",QMessageBox.Yes) 
+        elif order_type=='매수취소':
+            if num<1:
+                reply=QMessageBox.information(self,"알림","1주 이상 신청할 수 있습니다.",QMessageBox.Yes) 
+            else:
+                self.kiwoom.send_order("send_order_req", "0101", account, order_type_lookup[order_type], code, num, price, hoga_lookup[hoga], order_no)
+                reply=QMessageBox.information(self,"알림","<"+self.dialog.label_codeName.text()+"> 를 "+str(num)+"주 매수취소 신청하였습니다.",QMessageBox.Yes) 
+        else:
+            if num<1:
+                reply=QMessageBox.information(self,"알림","1주 이상 신청할 수 있습니다.",QMessageBox.Yes) 
+            else:
+                self.kiwoom.send_order("send_order_req", "0101", account, order_type_lookup[order_type], code, num, price, hoga_lookup[hoga], order_no)
+                reply=QMessageBox.information(self,"알림","<"+self.dialog.label_codeName.text()+"> 를"+str(num)+"주 매도취소 신청하였습니다.",QMessageBox.Yes) 
+      
     # 관심종목 추가
     def interest_add_clicked(self):
         global code_dict
@@ -330,106 +268,7 @@ class MainWindow(QMainWindow,form_class):
 
         else:
             self.ItemSearchBox.setTitle(codeName)
-            address='https://finance.naver.com/item/sise.nhn?code='+code_dict[codeName]
-
-            web=requests.get(address)
-            soup=BeautifulSoup(web.content,"html.parser")
-
-            nowVal=soup.find(id='_nowVal').get_text().strip() #현재가
-            rate=soup.find(id='_rate').get_text().strip() #등락률
-            quant=soup.find(id='_quant').get_text().strip() #거래량
-            start=soup.find('span',class_='tah p11').get_text().strip() #시가
-            high=soup.find(id='_high').get_text().strip() #고가
-            low=soup.find(id='_low').get_text().strip() #저가
-            gurae=soup.find(id='_amount').get_text().strip() #거래대금
-
-            diff=soup.find('td', class_='first')
-            diff_=diff.find(class_='blind').get_text().strip() #전일
-
-            self.lbl_nowVal.setText(nowVal)
-            self.lbl_diff.setText(diff_)
-            self.lbl_rate.setText(rate)
-            self.lbl_start.setText(start)
-            self.lbl_high.setText(high)
-            self.lbl_low.setText(low)
-            self.lbl_quant.setText(quant)
-            self.lbl_gurae.setText(gurae)
-
-            diff_r=int(diff_.replace(",",""))
-            nowVal_r=int(nowVal.replace(",",""))
-
-            difference_=str(abs(diff_r-nowVal_r))
-            self.lbl_difference.setText(self.kiwoom.change_format(difference_))
-
-            qPixmapVar=QPixmap()
-
-            if rate[0]=='+':
-                qPixmapVar.load("up.jpg")
-                self.lbl_upDown.setPixmap(qPixmapVar)
-
-                font=QFont()
-                font.setFamily("Bahnschrift")
-                font.setPointSize(18)
-
-                self.lbl_nowVal.setFont(font)
-                self.lbl_nowVal.setStyleSheet("Color:red")
-                self.lbl_difference.setStyleSheet("Color:red")
-                self.lbl_rate.setStyleSheet("Color:red")
-            elif rate[0]=='-':
-                qPixmapVar.load("down.jpg")
-                self.lbl_upDown.setPixmap(qPixmapVar)
-
-                font=QFont()
-                font.setFamily("Bahnschrift")
-                font.setPointSize(18)
-                self.lbl_nowVal.setFont(font)
-
-                self.lbl_nowVal.setStyleSheet("Color:blue")
-                self.lbl_difference.setStyleSheet("Color:blue")
-                self.lbl_rate.setStyleSheet("Color:blue")
-            else:
-                qPixmapVar.load("none.jpg")
-                self.lbl_upDown.setPixmap(qPixmapVar)
-
-                font=QFont()
-                font.setFamily("Bahnscrhift")
-                font.setPointSize(18)
-                self.lbl_nowVal.setFont(font)
-
-                self.lbl_nowVal.setStyleSheet("Color:Black")
-        
-            now=datetime.datetime.now()
-            nowDate=now.strftime("%Y%m%d")
-
-            #데이터프레임
-            stock=self.get_ohlcv(code_dict[codeName],nowDate)
-            #print(stock)
-
-            inc=stock.close >= stock.open
-            dec=stock.open > stock.close
-            w=12*60*60*1000
-
-            stock['date']=pd.to_datetime(stock['date'])
-            
-            #캔들차트
-            candle=figure(plot_width=700, plot_height=225, x_axis_type="datetime", tools=['pan, xwheel_zoom','box_zoom','reset','hover'])
-            candle.xaxis.major_label_orientation=pi/4
-            candle.yaxis.formatter = NumeralTickFormatter(format='0,0')
-            candle.grid.grid_line_alpha=0.3
-
-            candle.segment(stock.date, stock.high, stock.date, stock.low, color="black")
-            candle.vbar(stock.date[inc],w, stock.open[inc], stock.close[inc], fill_color="red", line_color="red")
-            candle.vbar(stock.date[dec],w, stock.open[dec], stock.close[dec], fill_color="blue", line_color="blue")
-            
-            hover=candle.select(dict(type=HoverTool))
-            hover.tooltips=[("Price","$y{0,0}")]  ## columnSource 뭐시기를 쓰면 hover가 가능하지만 하고싶지않은걸
-            hover.mode='mouse'
-            save(candle, filename="candle.html")
-
-            url=os.getcwd()
-            url_changed=url.replace('\\','/')
-
-            self.webEngineView.load(QUrl(url_changed+"/candle.html"))
+            self.crawlAndChart(code_dict[codeName])
 
 
     # 종목 코드 검색
@@ -447,7 +286,10 @@ class MainWindow(QMainWindow,form_class):
             reply=QMessageBox.information(self,"알림","종목코드를 제대로 입력해주세요",QMessageBox.Yes)
         else:
             self.ItemSearchBox.setTitle(c_name)
-            address="https://finance.naver.com/item/sise.nhn?code="+code
+            self.crawlAndChart(code)
+    
+    def crawlAndChart(self,stock_code):
+            address="https://finance.naver.com/item/sise.nhn?code="+stock_code
 
             web=requests.get(address)
             soup=BeautifulSoup(web.content,"html.parser")
@@ -520,7 +362,7 @@ class MainWindow(QMainWindow,form_class):
             nowDate=now.strftime("%Y%m%d")
 
             #데이터프레임
-            stock=self.get_ohlcv(code,nowDate)
+            stock=self.get_ohlcv(stock_code,nowDate)
             #print(stock)
 
             inc=stock.close >= stock.open
@@ -569,6 +411,22 @@ class MainWindow(QMainWindow,form_class):
         #, index=self.kiwoom.ohlcv['date']
         df_sorted=df.sort_values(by='date')
         return df_sorted
+
+    # order_type 에 따른 값 변경
+    def order_set(self):
+        order_type=self.dialog.cmb_order.currentText()
+
+        if order_type=='신규매도':
+            print('보유량에 따른 매도수 제한하는 코드 넣을 예정')
+
+    # 호가에 따른 값 변경
+    def kinds_set(self):
+        global nowVal
+        hoga=self.dialog.cmb_kinds.currentText()
+
+        if hoga=='시장가':
+            current_price=int(self.lbl_nowVal.text().replace(',',''))
+            self.dialog.spin_price.setValue(current_price)
 
     def check_balance(self):
         # 총 자산관리
