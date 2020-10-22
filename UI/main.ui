@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>2</number>
     </property>
     <widget class="QWidget" name="mainTab">
      <attribute name="title">
@@ -536,7 +536,7 @@
        <number>1</number>
       </property>
       <attribute name="horizontalHeaderDefaultSectionSize">
-       <number>82</number>
+       <number>75</number>
       </attribute>
       <column>
        <property name="text">
@@ -586,6 +586,11 @@
       <column>
        <property name="text">
         <string>예측값</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>옵션</string>
        </property>
       </column>
      </widget>
@@ -1213,7 +1218,7 @@
       <widget class="QPushButton" name="buySell_btn_3">
        <property name="geometry">
         <rect>
-         <x>250</x>
+         <x>180</x>
          <y>470</y>
          <width>101</width>
          <height>31</height>
@@ -1227,6 +1232,25 @@
        </property>
        <property name="text">
         <string>매매</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="btn_retained_renew">
+       <property name="geometry">
+        <rect>
+         <x>370</x>
+         <y>470</y>
+         <width>101</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <family>Arial</family>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>갱신</string>
        </property>
       </widget>
      </widget>

@@ -12,29 +12,29 @@ class database():
             db='NEWHAN', 
             charset='utf8')
         self.cursor = self.conn.cursor()
-        
-        
-    
-    # RETAINED_STOCK 테이블에 데이터가 있는지 확인    
-    def check_data_in_retained_stock(self,account_num):
-        
-        sql = "select EXISTS (select * from RETAINED_STOCK where user_account="+account_num+");"
+         
+    # user 테이블에 아이디/계좌 넣기
+    def user_insert(self,account):
+        sql="INSERT INTO USER (user_account) VALUES ("+account+");"
+        self.cursor.execute(sql)
+        self.conn.commit()
+
+
+    # user 테이블에 데이터가 있는지 확인    
+    def exist_in_user(self,account_num):
+        sql = "select EXISTS (select * from USER where user_account="+account_num+");"
         self.cursor.execute(sql)
         self.conn.commit()
         
         db_res = self.cursor.fetchall()
         return db_res[0][0]
     
-    # RETAINED_STOCK 테이블에 데이터 넣기 (처음 접속했을 때 한번만 실행)
-    def retained_update(self,account_num, retained_list):
-        
-        for i in range(len(retained_list)):
-            #sql = "INSERT INTO RETAINED_STOCK (user_account,stock_code,retained_volume) VALUES ('"+account_num+"','"+retained_list[i][0]+"','"+retained_list[i][1]+"') ON DUPLICATE KEY UPDATE user_account='"+account_num+"', stock_code='"+retained_list[i][0]+"', retained_volume='"+retained_list[i][1]+"';"
-            
-            sql = "INSERT INTO RETAINED_STOCK (user_account,stock_code,retained_volume) VALUES ('"+account_num+"','"+retained_list[i][0]+"','"+retained_list[i][1]+"');"
-            self.cursor.execute(sql)
-            self.conn.commit()
-        
+    # RETAINED_STOCK 테이블에 데이터 넣기
+    def retained_insert(self,account, code):    
+        sql = "INSERT INTO RETAINED_STOCK (user_account,stock_code) VALUES ("+account+",'"+code+"');"
+        self.cursor.execute(sql)
+        self.conn.commit()
+    
 
     # 보유종목 종목명 받아오기 - 파라미터 : (계좌명)
     def retained_get(self,data):

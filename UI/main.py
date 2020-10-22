@@ -51,60 +51,6 @@ class MainWindow(QMainWindow,form_class):
         user_name=self.kiwoom.dynamicCall("GetLoginInfo(QString)","USER_NAME")
         self.lbl_user_name.setText(user_name)
 
-        #Dialog 불러오기
-        self.dialog=uic.loadUi("trade.ui")
-        self.dialog.cmb_account.addItem(account_num) #계좌번호 받아오기
-        self.dialog.cmb_order.currentIndexChanged.connect(self.order_set)
-        self.dialog.cmb_kinds.currentIndexChanged.connect(self.kinds_set)
-
-        self.dialog.btn_order.clicked.connect(self.send_order)
-
-        '''
-        #초기 로그인 관심종목 받아오기
-        interest_list=list(self.db.interest_get(account_num))
-        
-        if len(interest_list) > 0:
-            self.interest_table.setRowCount(len(interest_list)+1)
-
-            for i in range(len(interest_list)):
-                item=QTableWidgetItem(interest_list[i])
-                self.interest_table.setItem(i,0,item)
-                self.interest_table.resizeRowsToContents()
-                self.interest_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-    
-        '''
-
-        #옵션 선택
-        global optVal
-        optVal=1
-        self.rapidUp_rd.setChecked(True)
-        self.rapidUp_rd.clicked.connect(self.groupboxRadFunction)
-        self.rapidDown_rd.clicked.connect(self.groupboxRadFunction)
-        self.tradeRank_rd.clicked.connect(self.groupboxRadFunction)
-        self.tradeASC_rd.clicked.connect(self.groupboxRadFunction)
-        self.tradeDESC_rd.clicked.connect(self.groupboxRadFunction)
-
-        #옵션 저장
-        self.optSave_btn.clicked.connect(self.optSave_clicked)
-
-        #예수금
-        self.kiwoom.set_input_value("계좌번호",account_num)
-        self.kiwoom.set_input_value("비밀번호","0000")
-        self.kiwoom.comm_rq_data("opw00001_req","opw00001",0,"2000")
-        
-        self.lbl_deposit.setText(self.kiwoom.d2_deposit)
-
-        #추정자산,총매입금,총평가금,손익,수익률
-        self.kiwoom.reset_opw00018_output()
-        self.kiwoom.set_input_value("계좌번호",account_num.rstrip(';'))
-        self.kiwoom.comm_rq_data("opw00018_req","opw00018",0,"2000")
-
-        self.lbl_purchase.setText(self.kiwoom.opw00018_output['single'][0]) #총매입
-        self.lbl_eval_amt.setText(self.kiwoom.opw00018_output['single'][1]) #총평가
-        self.lbl_profitLoss.setText(self.kiwoom.opw00018_output['single'][2]) #총손익
-        self.lbl_ror.setText(self.kiwoom.opw00018_output['single'][3]) #총수익률
-        self.lbl_asset.setText(self.kiwoom.opw00018_output['single'][4]) #총자산
-
         #종목 자동완성
         code_list=self.kiwoom.dynamicCall("GetCodeListByMarket(QString)",["0"]) #코스피
         code_list2=self.kiwoom.dynamicCall("GetCodeListByMarket(QString)",["10"]) #코스닥
@@ -130,12 +76,98 @@ class MainWindow(QMainWindow,form_class):
         code_completer=QCompleter(total_code_list)
         self.lineEdit_2.setCompleter(code_completer)
 
-        # 종목 검색 받아오기
-        self.nameSearch_btn.clicked.connect(self.codeSearch_clicked)
-        self.codeSearch_btn.clicked.connect(self.codeSearch_clicked2)
+        # DB 연결
+        self.db=database()
+
+        '''
+        ###### 사용자 등록 여부 확인 #####
+        '''
+
+        user_check=self.db.exist_in_user(account_num)
+
+        if user_check==0: # 첫 로그인일때
+            print('첫 로그인')
+            self.db.user_insert(account_num)
+
+            # 보유종목 DB에 넣기
+            self.kiwoom.reset_opw00018_output()
+            self.kiwoom.set_input_value("계좌번호",account_num.rstrip(';'))
+            self.kiwoom.comm_rq_data("opw00018_req","opw00018",0,"2000")
+            item_count=len(self.kiwoom.opw00018_output['retained'])
+
+            for j in range(item_count):
+                row=self.kiwoom.opw00018_output['retained'][j]
+                self.db.retained_insert(account_num,row[0][1:])
+                    
+        else: # 첫 로그인이 아닐때
+            print('첫 로그인이 아닙니다.')
+            # 로그인 시 관심종목 받아오기
+            interest_list=self.db.interest_get(account_num)
+        
+            if len(interest_list) > 0:
+                self.interest_table.setRowCount(len(interest_list))
+
+                for i in range(len(interest_list)):
+                    for key,values in code_dict.items():
+                        if values==interest_list[i][0]:
+                            stock_name=key
+                            break
+
+                    item=QTableWidgetItem(stock_name)
+                    self.interest_table.setItem(i,0,item)
+                    self.interest_table.resizeRowsToContents()
+                    self.interest_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+            
+            # 로그인 시 보유종목 업데이트
+            
+    
+
+        #예수금
+        self.kiwoom.set_input_value("계좌번호",account_num)
+        self.kiwoom.set_input_value("비밀번호","0000")
+        self.kiwoom.comm_rq_data("opw00001_req","opw00001",0,"2000")
+        
+        self.lbl_deposit.setText(self.kiwoom.d2_deposit)
+
+        #추정자산,총매입금,총평가금,손익,수익률
+        self.kiwoom.reset_opw00018_output()
+        self.kiwoom.set_input_value("계좌번호",account_num.rstrip(';'))
+        self.kiwoom.comm_rq_data("opw00018_req","opw00018",0,"2000")
+
+        self.lbl_purchase.setText(self.kiwoom.opw00018_output['single'][0]) #총매입
+        self.lbl_eval_amt.setText(self.kiwoom.opw00018_output['single'][1]) #총평가
+        self.lbl_profitLoss.setText(self.kiwoom.opw00018_output['single'][2]) #총손익
+        self.lbl_ror.setText(self.kiwoom.opw00018_output['single'][3]) #총수익률
+        self.lbl_asset.setText(self.kiwoom.opw00018_output['single'][4]) #총자산
 
         # 보유자산 종목 관리
         self.check_balance()
+
+
+        #Dialog 불러오기
+        self.dialog=uic.loadUi("trade.ui")
+        self.dialog.cmb_account.addItem(account_num) #계좌번호 받아오기
+        self.dialog.cmb_order.currentIndexChanged.connect(self.order_set)
+        self.dialog.cmb_kinds.currentIndexChanged.connect(self.kinds_set)
+
+        self.dialog.btn_order.clicked.connect(self.send_order)
+
+        #옵션 선택
+        global optVal
+        optVal=1
+        self.rapidUp_rd.setChecked(True)
+        self.rapidUp_rd.clicked.connect(self.groupboxRadFunction)
+        self.rapidDown_rd.clicked.connect(self.groupboxRadFunction)
+        self.tradeRank_rd.clicked.connect(self.groupboxRadFunction)
+        self.tradeASC_rd.clicked.connect(self.groupboxRadFunction)
+        self.tradeDESC_rd.clicked.connect(self.groupboxRadFunction)
+
+        #옵션 선택
+        self.optSave_btn.clicked.connect(self.optSave_clicked)
+
+        # 종목 검색 받아오기
+        self.nameSearch_btn.clicked.connect(self.codeSearch_clicked)
+        self.codeSearch_btn.clicked.connect(self.codeSearch_clicked2)
 
         # 관심종목 추가
         self.interest_btn.clicked.connect(self.interest_add_clicked)
@@ -147,6 +179,9 @@ class MainWindow(QMainWindow,form_class):
         self.buySell_btn_1.clicked.connect(self.buySellClicked1)
         self.buySell_btn_2.clicked.connect(self.buySellClicked2)
         self.buySell_btn_3.clicked.connect(self.buySellClicked3)
+
+        # 보유종목 생신
+        self.btn_retained_renew.clicked.connect(self.update_retained)
 
     # 메인화면 매매
     def buySellClicked1(self):
@@ -170,8 +205,6 @@ class MainWindow(QMainWindow,form_class):
             self.dialog.label_code.setText(code_dict[select_code]) #종목코드 받아오기 
             self.dialog.label_codeName.setText(select_code) #종목명 받아오기 
             self.dialog.show()
-            #dlg = buySellDialog(select_code,nowVal)
-            #dlg.exec_()
             
     # 보유종목 매매
     def buySellClicked3(self):
@@ -180,8 +213,10 @@ class MainWindow(QMainWindow,form_class):
         if select_code==-1:
             reply=QMessageBox.information(self,"알림","매매할 종목을 선택해주세요",QMessageBox.Yes)
         else:
-            dlg = buySellDialog()
-            dlg.exec_()
+            select_item=self.have_table.item(select_code,0).text()
+            self.dialog.label_code.setText(code_dict[select_item]) #종목코드 받아오기 
+            self.dialog.label_codeName.setText(select_item) #종목명 받아오기 
+            self.dialog.show()
 
     # 매매함수
     def send_order(self):
@@ -208,6 +243,8 @@ class MainWindow(QMainWindow,form_class):
         elif order_type=='신규매도':
             if num<1:
                 reply=QMessageBox.information(self,"알림","1주 이상 신청할 수 있습니다.",QMessageBox.Yes) 
+            elif sell_num<num:
+                reply=QMessageBox.information(self,"알림","보유주 이상 매도할 수 없습니다.",QMessageBox.Yes) 
             else:
                 self.kiwoom.send_order("send_order_req", "0101", account, order_type_lookup[order_type], code, num, price, hoga_lookup[hoga], order_no)
                 reply=QMessageBox.information(self,"알림","<"+self.dialog.label_codeName.text()+"> 를 "+str(num)+"주 신규매도 신청하였습니다.",QMessageBox.Yes) 
@@ -223,18 +260,37 @@ class MainWindow(QMainWindow,form_class):
             else:
                 self.kiwoom.send_order("send_order_req", "0101", account, order_type_lookup[order_type], code, num, price, hoga_lookup[hoga], order_no)
                 reply=QMessageBox.information(self,"알림","<"+self.dialog.label_codeName.text()+"> 를"+str(num)+"주 매도취소 신청하였습니다.",QMessageBox.Yes) 
-      
+    
+    # 보유종목 업데이트
+    def update_retained(self):
+        self.kiwoom.reset_opw00018_output()
+        self.kiwoom.set_input_value("계좌번호",account_num.rstrip(';'))
+        self.kiwoom.comm_rq_data("opw00018_req","opw00018",0,"2000")
+        
+        item_count=len(self.kiwoom.opw00018_output['multi'])
+
+        for j in range(item_count):
+            row=self.kiwoom.opw00018_output['multi'][j]
+            for i in range(len(row)):
+                item=QTableWidgetItem(row[i])
+                item.setTextAlignment(Qt.AlignVCenter | Qt.AlignRight)
+                self.have_table.setItem(j,i,item)
+        self.have_table.resizeRowsToContents()
+        self.have_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        
+        print('보유종목이 업데이트 되었습니다')
+
     # 관심종목 추가
     def interest_add_clicked(self):
         global code_dict
         global account_num
 
-        interest_code=self.ItemSearchBox.title()
-        print(interest_code)
+        interest_name=self.ItemSearchBox.title()
+        print(interest_name)
         
-        exist_interest=self.interest_table.findItems(interest_code, Qt.MatchContains)
+        exist_interest=self.interest_table.findItems(interest_name, Qt.MatchContains)
 
-        if interest_code=='종목명' or interest_code not in code_dict:
+        if interest_name=='종목명' or interest_name not in code_dict:
             reply=QMessageBox.information(self,"알림","올바른 종목명이 아닙니다",QMessageBox.Yes)
 
         elif len(exist_interest)>0:
@@ -242,11 +298,12 @@ class MainWindow(QMainWindow,form_class):
         else:
             num=self.interest_table.rowCount() ## 후에 DB에서 가져올 예정
             self.interest_table.setRowCount(num+1)
-            item=QTableWidgetItem(interest_code)
+            item=QTableWidgetItem(interest_name)
             self.interest_table.setItem(num,0,item)
-            #self.db.interest_insert((account_num,interest_code))
+            self.db.interest_insert(account_num,code_dict[interest_name])
             self.interest_table.resizeRowsToContents()
             self.interest_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+            reply=QMessageBox.information(self,"알림","<"+interest_name+">  관심종목으로 추가되었습니다.",QMessageBox.Yes)
 
     # 관심종목 삭제
     def interest_delete_clicked(self):
@@ -255,7 +312,11 @@ class MainWindow(QMainWindow,form_class):
         if select_interest==-1:
             reply=QMessageBox.information(self,"알림","삭제할 종목을 선택해주세요",QMessageBox.Yes)
         else:
+            select_item=self.interest_table.currentItem().text()
+
             self.interest_table.removeRow(select_interest)
+            self.db.interest_delete(account_num,code_dict[select_item])
+            reply=QMessageBox.information(self,"알림","<"+select_item+">  관심종목에서 삭제되었습니다.",QMessageBox.Yes)
             
 
     #  종목명 검색
@@ -417,7 +478,28 @@ class MainWindow(QMainWindow,form_class):
         order_type=self.dialog.cmb_order.currentText()
 
         if order_type=='신규매도':
-            print('보유량에 따른 매도수 제한하는 코드 넣을 예정')
+            self.kiwoom.reset_opw00018_output()
+            self.kiwoom.set_input_value("계좌번호",account_num.rstrip(';'))
+            self.kiwoom.comm_rq_data("opw00018_req","opw00018",0,"2000")
+        
+            item_count=len(self.kiwoom.opw00018_output['retained'])
+
+            retain_dict=dict()
+            for j in range(item_count):
+                row=self.kiwoom.opw00018_output['retained'][j]
+                retain_dict[row[1]]=int(row[2])
+
+            if self.dialog.label_codeName.text() in retain_dict:
+                global sell_num
+                sell_num=retain_dict[self.dialog.label_codeName.text()]
+                self.dialog.spin_num.setValue(sell_num)
+            else:
+                self.dialog.btn_order.setEnabled(False)
+
+        else:
+            self.dialog.spin_num.setValue(0)
+            self.dialog.btn_order.setEnabled(True)
+
 
     # 호가에 따른 값 변경
     def kinds_set(self):
@@ -425,11 +507,13 @@ class MainWindow(QMainWindow,form_class):
         hoga=self.dialog.cmb_kinds.currentText()
 
         if hoga=='시장가':
-            current_price=int(self.lbl_nowVal.text().replace(',',''))
-            self.dialog.spin_price.setValue(current_price)
+            self.dialog.spin_price.setValue(0)
+            self.dialog.spin_price.setEnabled(False)
+        else:
+            self.dialog.spin_price.setEnabled(True)
 
+    # 총 자산관리
     def check_balance(self):
-        # 총 자산관리
         item=QTableWidgetItem(self.kiwoom.d2_deposit)
         item.setTextAlignment(Qt.AlignVCenter | Qt.AlignRight)
         self.total_table.setItem(0,0,item)
@@ -454,6 +538,7 @@ class MainWindow(QMainWindow,form_class):
         self.have_table.resizeRowsToContents()
         self.have_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
     
+    # 옵션변경에 따른 함수
     def optSave_clicked(self):
         global optVal
 

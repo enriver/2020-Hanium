@@ -86,7 +86,7 @@ class Kiwoom(QAxWidget):
         self.d2_deposit=Kiwoom.change_format(d2_deposit)
     
     def reset_opw00018_output(self):
-        self.opw00018_output={'single':[],'multi':[]}
+        self.opw00018_output={'single':[],'multi':[],'retained':[]}
         
     def _opw00018(self,rqname,trcode):
 
@@ -120,6 +120,7 @@ class Kiwoom(QAxWidget):
             current_price=self._comm_get_data(trcode,"",rqname,i,"현재가")
             eval_profit_loss_price=self._comm_get_data(trcode,"",rqname,i,"평가손익")
             earning_rate=self._comm_get_data(trcode,"",rqname,i,"수익률(%)")
+            code=self._comm_get_data(trcode,"",rqname,i,"종목번호")
 
             quantity=Kiwoom.change_format(quantity)
             purchase_price=Kiwoom.change_format(purchase_price)
@@ -128,6 +129,7 @@ class Kiwoom(QAxWidget):
             earning_rate=Kiwoom.change_format2(earning_rate)
 
             self.opw00018_output['multi'].append([name,quantity,purchase_price,current_price,eval_profit_loss_price,earning_rate])
+            self.opw00018_output['retained'].append([code,name,quantity])
 
     def _opt10081(self,rqname,trcode):
         data_cnt=self._get_repeat_cnt(trcode,rqname)
@@ -153,6 +155,8 @@ class Kiwoom(QAxWidget):
 
     def send_order(self, rqname, screen_no, acc_no, order_type, code, quantity, price, hoga, order_no):
         self.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",[rqname, screen_no, acc_no, order_type, code, quantity, price, hoga, order_no])
+
+    
 
     @staticmethod
     def change_format(data):
