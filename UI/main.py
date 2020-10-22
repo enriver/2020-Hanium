@@ -88,19 +88,10 @@ class MainWindow(QMainWindow,form_class):
         if user_check==0: # 첫 로그인일때
             print('첫 로그인')
             self.db.user_insert(account_num)
-
-            # 보유종목 DB에 넣기
-            self.kiwoom.reset_opw00018_output()
-            self.kiwoom.set_input_value("계좌번호",account_num.rstrip(';'))
-            self.kiwoom.comm_rq_data("opw00018_req","opw00018",0,"2000")
-            item_count=len(self.kiwoom.opw00018_output['retained'])
-
-            for j in range(item_count):
-                row=self.kiwoom.opw00018_output['retained'][j]
-                self.db.retained_insert(account_num,row[0][1:])
                     
         else: # 첫 로그인이 아닐때
             print('첫 로그인이 아닙니다.')
+
             # 로그인 시 관심종목 받아오기
             interest_list=self.db.interest_get(account_num)
         
@@ -117,8 +108,6 @@ class MainWindow(QMainWindow,form_class):
                     self.interest_table.setItem(i,0,item)
                     self.interest_table.resizeRowsToContents()
                     self.interest_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-            
-            # 로그인 시 보유종목 업데이트
             
     
 

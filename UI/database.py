@@ -68,7 +68,6 @@ class database():
     # 관심종목 추가 - 파라미터 : (계좌명, 종목코드)
     def interest_insert(self, account_num, interest_stock_code):
         sql = "INSERT INTO INTEREST_STOCK(user_account,stock_code) VALUES ("+account_num+",'"+interest_stock_code+"');"
-        print(sql)
         self.cursor.execute(sql)
         self.conn.commit()
 
