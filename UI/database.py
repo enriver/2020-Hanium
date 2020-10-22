@@ -35,6 +35,11 @@ class database():
         self.cursor.execute(sql)
         self.conn.commit()
     
+    # RETAINED_STOCK 데이터 삭제
+    def retained_delete(self,account):
+        sql= "DELETE FROM RETAINED_STOCK WHERE user_account="+account+";"
+        self.cursor.execute(sql)
+        self.conn.commit()
 
     # 보유종목 종목명 받아오기 - 파라미터 : (계좌명)
     def retained_get(self,data):
@@ -51,14 +56,6 @@ class database():
         self.conn.commit()
         db_res = self.cursor.fetchall()
         return db_res
-
-    # 보유종목 삭제 - 파라미터 : (계좌명, 종목코드)
-    def ratained_delete(self, data):
-        sql= "DELETE FROM RETAINED_STOCK WHERE user_account=$s and stock_code=$s;"
-        self.cursor.execute(sql,data)
-        self.conn.commit()
-        
-        print('보유종목이 삭제되었습니다.')
 
     # 관심종목 삭제 - 파라미터 : (계좌명, 종목코드)
     def interest_delete(self, account_num, interest_stock_code_deleted):

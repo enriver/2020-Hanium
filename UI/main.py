@@ -180,16 +180,18 @@ class MainWindow(QMainWindow,form_class):
         self.buySell_btn_2.clicked.connect(self.buySellClicked2)
         self.buySell_btn_3.clicked.connect(self.buySellClicked3)
 
-        # 보유종목 생신
+        # 보유종목 갱신
         self.btn_retained_renew.clicked.connect(self.update_retained)
 
     # 메인화면 매매
     def buySellClicked1(self):
         select_code=self.main_table.currentRow()
 
+
         if select_code==-1:
             reply=QMessageBox.information(self,"알림","매매할 종목을 선택해주세요",QMessageBox.Yes) 
         else:
+            self.update_retained()
             dlg = buySellDialog()
             dlg.exec_()
         
@@ -199,9 +201,11 @@ class MainWindow(QMainWindow,form_class):
 
         select_code=self.ItemSearchBox.title()
 
+
         if select_code == '종목명' or select_code not in code_dict:
             reply=QMessageBox.information(self,"알림","종목 검색 후 매매를 시도하세요",QMessageBox.Yes)
         else:
+            self.update_retained()
             self.dialog.label_code.setText(code_dict[select_code]) #종목코드 받아오기 
             self.dialog.label_codeName.setText(select_code) #종목명 받아오기 
             self.dialog.show()
@@ -210,9 +214,12 @@ class MainWindow(QMainWindow,form_class):
     def buySellClicked3(self):
         select_code=self.have_table.currentRow()
 
+
         if select_code==-1:
             reply=QMessageBox.information(self,"알림","매매할 종목을 선택해주세요",QMessageBox.Yes)
         else:
+            self.update_retained()
+
             select_item=self.have_table.item(select_code,0).text()
             self.dialog.label_code.setText(code_dict[select_item]) #종목코드 받아오기 
             self.dialog.label_codeName.setText(select_item) #종목명 받아오기 
@@ -260,17 +267,25 @@ class MainWindow(QMainWindow,form_class):
             else:
                 self.kiwoom.send_order("send_order_req", "0101", account, order_type_lookup[order_type], code, num, price, hoga_lookup[hoga], order_no)
                 reply=QMessageBox.information(self,"알림","<"+self.dialog.label_codeName.text()+"> 를"+str(num)+"주 매도취소 신청하였습니다.",QMessageBox.Yes) 
-    
+
+        self.update_retained()
+
     # 보유종목 업데이트
     def update_retained(self):
+        self.db.retained_delete(account_num)
+
         self.kiwoom.reset_opw00018_output()
         self.kiwoom.set_input_value("계좌번호",account_num.rstrip(';'))
         self.kiwoom.comm_rq_data("opw00018_req","opw00018",0,"2000")
         
         item_count=len(self.kiwoom.opw00018_output['multi'])
+        self.have_table.setRowCount(item_count)
 
         for j in range(item_count):
             row=self.kiwoom.opw00018_output['multi'][j]
+            row2=self.kiwoom.opw00018_output['retained'][j]
+            self.db.retained_insert(account_num,row2[0][1:])
+
             for i in range(len(row)):
                 item=QTableWidgetItem(row[i])
                 item.setTextAlignment(Qt.AlignVCenter | Qt.AlignRight)
@@ -278,7 +293,8 @@ class MainWindow(QMainWindow,form_class):
         self.have_table.resizeRowsToContents()
         self.have_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         
-        print('보유종목이 업데이트 되었습니다')
+        print('보유종목 delete / update')
+
 
     # 관심종목 추가
     def interest_add_clicked(self):
@@ -526,17 +542,24 @@ class MainWindow(QMainWindow,form_class):
         self.total_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
         # 보유 종목 관리
+        self.db.retained_delete(account_num)
+
         item_count=len(self.kiwoom.opw00018_output['multi'])
         self.have_table.setRowCount(item_count)
 
         for j in range(item_count):
             row=self.kiwoom.opw00018_output['multi'][j]
+            row2=self.kiwoom.opw00018_output['retained'][j]
+            self.db.retained_insert(account_num,row2[0][1:])
+
             for i in range(len(row)):
                 item=QTableWidgetItem(row[i])
                 item.setTextAlignment(Qt.AlignVCenter | Qt.AlignRight)
                 self.have_table.setItem(j,i,item)
         self.have_table.resizeRowsToContents()
         self.have_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
+        
     
     # 옵션변경에 따른 함수
     def optSave_clicked(self):
