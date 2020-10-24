@@ -14,9 +14,10 @@ import time
 import pandas as pd
 from bokeh.plotting import figure, save
 from bokeh.models.formatters import NumeralTickFormatter
-from bokeh.models import HoverTool
+from bokeh.models import HoverTool, ColumnDataSource
 from math import pi
 import os
+import numpy as np
 
 #import pymysql
 
@@ -109,6 +110,21 @@ class MainWindow(QMainWindow,form_class):
                     self.interest_table.resizeRowsToContents()
                     self.interest_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
             
+            # 로그인 시 DB에서 보유종목 받아오기
+            retained_list=self.db.retained_get(account_num)
+
+            
+            #a=self.get_mainView('293490')
+            #print(a)
+            for i in range(len(interest_list)):
+                a=self.get_mainView(interest_list[i][0])
+                print(a)
+
+            # 보유종목/관심종목 개수가 0> 일때 main_table 에 띄워줌
+            # 항상 option 값을 변경할때 main_table에 있는 rowCount의 수(보유종목+관심종목 수) 를 체크해줌
+            # rowCount 수 이후부터 main_table을 update 하는 방식으로 구성
+
+
     
 
         #예수금
@@ -143,7 +159,8 @@ class MainWindow(QMainWindow,form_class):
 
         #옵션 선택
         global optVal
-        optVal=1
+        optVal=0
+
         self.rapidUp_rd.setChecked(True)
         self.rapidUp_rd.clicked.connect(self.groupboxRadFunction)
         self.rapidDown_rd.clicked.connect(self.groupboxRadFunction)
@@ -184,6 +201,7 @@ class MainWindow(QMainWindow,form_class):
             dlg = buySellDialog()
             dlg.exec_()
         
+
     # 검색된 종목 매매
     def buySellClicked2(self):
         global code_dict
@@ -202,7 +220,6 @@ class MainWindow(QMainWindow,form_class):
     # 보유종목 매매
     def buySellClicked3(self):
         select_code=self.have_table.currentRow()
-
 
         if select_code==-1:
             reply=QMessageBox.information(self,"알림","매매할 종목을 선택해주세요",QMessageBox.Yes)
@@ -295,20 +312,49 @@ class MainWindow(QMainWindow,form_class):
         
         exist_interest=self.interest_table.findItems(interest_name, Qt.MatchContains)
 
-        if interest_name=='종목명' or interest_name not in code_dict:
-            reply=QMessageBox.information(self,"알림","올바른 종목명이 아닙니다",QMessageBox.Yes)
+        retained_db=list()
+        retained_list=self.db.retained_get(account_num)
+        
+        # 보유 종목이 있을 때
+        if len(retained_list) > 0:
+            for i in range(len(retained_list)):
+                retained_db.append(retained_list[i][0])
 
-        elif len(exist_interest)>0:
-            reply=QMessageBox.information(self,"알림","이미 관심종목으로 추가된 종목입니다.",QMessageBox.Yes)
+            if interest_name=='종목명' or interest_name not in code_dict:
+                reply=QMessageBox.information(self,"알림","올바른 종목명이 아닙니다",QMessageBox.Yes)
+
+            elif len(exist_interest)>0:
+                reply=QMessageBox.information(self,"알림","이미 관심종목으로 추가된 종목입니다.",QMessageBox.Yes)
+
+            elif code_dict[interest_name] in retained_db:
+                reply=QMessageBox.information(self,"알림","이미 보유하신 종목입니다.",QMessageBox.Yes)
+            else:
+                num=self.interest_table.rowCount() ## 후에 DB에서 가져올 예정
+                self.interest_table.setRowCount(num+1)
+                item=QTableWidgetItem(interest_name)
+                self.interest_table.setItem(num,0,item)
+                self.db.interest_insert(account_num,code_dict[interest_name])
+                self.interest_table.resizeRowsToContents()
+                self.interest_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+                reply=QMessageBox.information(self,"알림","<"+interest_name+">  관심종목으로 추가되었습니다.",QMessageBox.Yes)
+
+        # 보유 종목이 없을 때
         else:
-            num=self.interest_table.rowCount() ## 후에 DB에서 가져올 예정
-            self.interest_table.setRowCount(num+1)
-            item=QTableWidgetItem(interest_name)
-            self.interest_table.setItem(num,0,item)
-            self.db.interest_insert(account_num,code_dict[interest_name])
-            self.interest_table.resizeRowsToContents()
-            self.interest_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-            reply=QMessageBox.information(self,"알림","<"+interest_name+">  관심종목으로 추가되었습니다.",QMessageBox.Yes)
+            if interest_name=='종목명' or interest_name not in code_dict:
+                reply=QMessageBox.information(self,"알림","올바른 종목명이 아닙니다",QMessageBox.Yes)
+
+            elif len(exist_interest)>0:
+                reply=QMessageBox.information(self,"알림","이미 관심종목으로 추가된 종목입니다.",QMessageBox.Yes)
+
+            else:
+                num=self.interest_table.rowCount() ## 후에 DB에서 가져올 예정
+                self.interest_table.setRowCount(num+1)
+                item=QTableWidgetItem(interest_name)
+                self.interest_table.setItem(num,0,item)
+                self.db.interest_insert(account_num,code_dict[interest_name])
+                self.interest_table.resizeRowsToContents()
+                self.interest_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+                reply=QMessageBox.information(self,"알림","<"+interest_name+">  관심종목으로 추가되었습니다.",QMessageBox.Yes)
 
     # 관심종목 삭제
     def interest_delete_clicked(self):
@@ -355,60 +401,51 @@ class MainWindow(QMainWindow,form_class):
             self.crawlAndChart(code)
     
     def crawlAndChart(self,stock_code):
-            address="https://finance.naver.com/item/sise.nhn?code="+stock_code
+            result=self.get_searchView(stock_code)
+            
+            
+            self.lbl_nowVal.setText(self.kiwoom.change_format(str(result.nowVal[0])))
+            self.lbl_rate.setText(result.rate[0])
+            self.lbl_start.setText(result.open[0])
+            self.lbl_high.setText(result.high[0])
+            self.lbl_low.setText(result.low[0])
+            self.lbl_quant.setText(result.quant[0])
+            self.lbl_up.setText(result.up[0])
+            self.lbl_down.setText(result.down[0])
+            self.lbl_per.setText(result.per[0])
+            self.lbl_roe.setText(result.roe[0])
 
-            web=requests.get(address)
-            soup=BeautifulSoup(web.content,"html.parser")
-
-            nowVal=soup.find(id='_nowVal').get_text().strip() #현재가
-            rate=soup.find(id='_rate').get_text().strip() #등락률
-            quant=soup.find(id='_quant').get_text().strip() #거래량
-            start=soup.find('span',class_='tah p11').get_text().strip() #시가
-            high=soup.find(id='_high').get_text().strip() #고가
-            low=soup.find(id='_low').get_text().strip() #저가
-            gurae=soup.find(id='_amount').get_text().strip() #거래대금
-
-            diff=soup.find('td', class_='first')
-            diff_=diff.find(class_='blind').get_text().strip() #전일
-
-            diff_r=int(diff_.replace(",",""))
-            nowVal_r=int(nowVal.replace(",",""))
-
-            difference_=str(abs(diff_r-nowVal_r))
-            self.lbl_difference.setText(self.kiwoom.change_format(difference_))
-
-            self.lbl_nowVal.setText(nowVal)
-            self.lbl_rate.setText(rate)
-            self.lbl_diff.setText(diff_)
-            self.lbl_start.setText(start)
-            self.lbl_high.setText(high)
-            self.lbl_low.setText(low)
-            self.lbl_quant.setText(quant)
-            self.lbl_gurae.setText(gurae)
 
             qPixmapVar=QPixmap()
-
-            if rate[0]=='+':
+            
+            if result.rate[0][0]=='+':
                 qPixmapVar.load("up.jpg")
                 self.lbl_upDown.setPixmap(qPixmapVar)
 
                 font=QFont()
                 font.setFamily("Bahnschrift")
                 font.setPointSize(18)
-                self.lbl_nowVal.setFont(font)
+                
+                self.lbl_difference.setText(self.kiwoom.change_format(str(result['diff'][0])))
+                self.lbl_diff.setText(self.kiwoom.change_format(str(result.nowVal[0]-result['diff'][0])))
 
+                self.lbl_nowVal.setFont(font)
                 self.lbl_nowVal.setStyleSheet("Color:red")
                 self.lbl_difference.setStyleSheet("Color:red")
                 self.lbl_rate.setStyleSheet("Color:red")
-            elif rate[0]=='-':
+
+            elif result.rate[0][0]=='-':
                 qPixmapVar.load("down.jpg")
                 self.lbl_upDown.setPixmap(qPixmapVar)
 
                 font=QFont()
                 font.setFamily("Bahnschrift")
                 font.setPointSize(18)
-                self.lbl_nowVal.setFont(font)
+                
+                self.lbl_difference.setText(self.kiwoom.change_format(str(result['diff'][0])))
+                self.lbl_diff.setText(self.kiwoom.change_format(str(result.nowVal[0]+result['diff'][0])))
 
+                self.lbl_nowVal.setFont(font)
                 self.lbl_nowVal.setStyleSheet("Color:blue")
                 self.lbl_difference.setStyleSheet("Color:blue")
                 self.lbl_rate.setStyleSheet("Color:blue")
@@ -423,6 +460,8 @@ class MainWindow(QMainWindow,form_class):
                 self.lbl_nowVal.setFont(font)
 
                 self.lbl_nowVal.setStyleSheet("Color:Black")
+                self.lbl_difference.setText('0')
+                self.lbl_diff.setText(self.kiwoom.change_format(str(result.nowVal[0])))
 
             now=datetime.datetime.now()
             nowDate=now.strftime("%Y%m%d")
@@ -431,32 +470,69 @@ class MainWindow(QMainWindow,form_class):
             stock=self.get_ohlcv(stock_code,nowDate)
             #print(stock)
 
+            w=12*60*60*1000
+            
+            stock['dates']=pd.to_datetime(stock['date'])
+            stock[['date']]=stock[['date']].applymap(str).applymap(lambda x: "{}-{}-{}".format(x[0:4],x[4:6],x[6:]))
+            
             inc=stock.close >= stock.open
             dec=stock.open > stock.close
-            w=12*60*60*1000
-
-            stock['date']=pd.to_datetime(stock['date'])
             
-            #캔들차트
-            candle=figure(plot_width=700, plot_height=225, x_axis_type="datetime", tools=['pan, xwheel_zoom','box_zoom','reset','hover'])
+            TOOLTIPS=[
+                    ('날짜','@date'),
+                    ('시가','@open{0,0}'), 
+                    ('고가','@high{0,0}'),
+                    ('저가','@low{0,0}'),
+                    ('종가','@close{0,0}'),
+                    ]
+
+            stock['dateinc'] = stock.dates[inc]
+            stock['openinc'] = stock.open[inc]
+            stock['closeinc'] = stock.close[inc]
+            stock['datedec'] = stock.dates[dec]
+            stock['opendec'] = stock.open[dec]
+            stock['closedec'] = stock.close[dec]
+
+            source=ColumnDataSource(stock)
+            # 캔들차트
+            candle=figure(plot_width=700, plot_height=225, x_axis_type="datetime", tools=['pan', 'xwheel_zoom','box_zoom','reset','hover','crosshair'])
             candle.xaxis.major_label_orientation=pi/4
             candle.yaxis.formatter = NumeralTickFormatter(format='0,0')
             candle.grid.grid_line_alpha=0.3
 
-            candle.segment(stock.date, stock.high, stock.date, stock.low, color="black")
-            candle.vbar(stock.date[inc],w, stock.open[inc], stock.close[inc], fill_color="red", line_color="red")
-            candle.vbar(stock.date[dec],w, stock.open[dec], stock.close[dec], fill_color="blue", line_color="blue")
-            
+            candle.segment('dates','high','dates','low', color="black",source=source)
+            candle.vbar('dateinc',w,'openinc','closeinc', fill_color="red", line_color="red",source=source, name='up')
+            candle.vbar('datedec',w,'opendec','closedec', fill_color="blue", line_color="blue",source=source, name='down')
+
             hover=candle.select(dict(type=HoverTool))
-            hover.tooltips=[("Price","$y{0,0}")]  ## columnSource 뭐시기를 쓰면 hover가 가능하지만 하고싶지않은걸
-            hover.mode='mouse'
+            hover.tooltips=TOOLTIPS
+            hover.names=['up','down']
+        
+            hover.mode='vline'
             save(candle, filename="candle.html")
 
             url=os.getcwd()
             url_changed=url.replace('\\','/')
 
             self.webEngineView.load(QUrl(url_changed+"/candle.html"))
+            
+    def get_searchView(self,code):
+        self.kiwoom.searchView={'nowVal':[], 'diff':[],'rate':[],'quant':[],'open':[],'high':[],'low':[],'up':[],'down':[],'per':[],'roe':[]} 
+        self.kiwoom.set_input_value("종목코드",code)
+        self.kiwoom.comm_rq_data("opt10001_req","opt10001",0,"0101")
 
+        df=pd.DataFrame(self.kiwoom.searchView, columns=['nowVal','diff','rate','quant','open','high','low','up','down','per','roe'])
+
+        return df
+
+    def get_mainView(self,code):
+        self.kiwoom.mainView={'name':[],'nowVal':[], 'diff':[],'rate':[],'quant':[],'open':[],'high':[],'low':[]}
+        self.kiwoom.set_input_value("종목코드",code)
+        self.kiwoom.comm_rq_data("mainView","opt10001",0,"0101")
+
+        df=pd.DataFrame(self.kiwoom.mainView, columns=['name','nowVal','diff','rate','quant','open','high','low'])
+
+        return df
 
     def get_ohlcv(self, code,start):
         self.kiwoom.ohlcv={'date':[],'open':[],'high':[],'low':[],'close':[],'volume':[]}
@@ -554,34 +630,44 @@ class MainWindow(QMainWindow,form_class):
     def optSave_clicked(self):
         global optVal
 
-        if optVal==1:
-            print("급등")
+        if optVal==0:
+            up_list=self.db.get_buy_list_crawl(0)
+
+            print(up_list)
+        elif optVal==1:
+            down_list=self.db.get_buy_list_crawl(1)
+
+            print(down_list)
         elif optVal==2:
-            print("급락")
+            top_list=self.db.get_buy_list_crawl(2)
+
+            print(top_list)
         elif optVal==3:
-            print("거래상위")
+            inc_list=self.db.get_buy_list_crawl(3)
+
+            print(inc_list)
         elif optVal==4:
-            print("거래증가")
-        elif optVal==5:
-            print("거래감소")
+            dec_list=self.db.get_buy_list_crawl(4)
+
+            print(dec_list)
 
     
     def groupboxRadFunction(self):
         '''
-        옵션값  [급등:1 ,급락:2 ,거래상위:3 ,거래증가:4 ,거래감소:5]
+        옵션값  [급등:0 ,급락:1 ,거래상위:2 ,거래증가:3 ,거래감소:4]
         '''
         global optVal
         
         if self.rapidUp_rd.isChecked():
-            optVal=1
+            optVal=0
         elif self.rapidDown_rd.isChecked():
-            optVal=2
+            optVal=1
         elif self.tradeRank_rd.isChecked():
-            optVal=3
+            optVal=2
         elif self.tradeASC_rd.isChecked():
-            optVal=4
+            optVal=3
         elif self.tradeDESC_rd.isChecked():
-            optVal=5
+            optVal=4
 
     def renew_clicked(self):
         nowTime=datetime.datetime.now().strftime("%H:%M %p")

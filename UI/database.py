@@ -5,7 +5,7 @@ class database():
     
     def __init__(self):
         self.conn = pymysql.connect(
-            host = '3.21.41.113', 
+            host = '18.224.246.247', 
             port =3306, 
             user = 'root',
             password = 'hanium', 
@@ -22,13 +22,49 @@ class database():
 
     # user 테이블에 데이터가 있는지 확인    
     def exist_in_user(self,account_num):
-        sql = "select EXISTS (select * from USER where user_account="+account_num+");"
+        sql = "SELECT EXISTS (select * from USER where user_account="+account_num+");"
         self.cursor.execute(sql)
         self.conn.commit()
         
         db_res = self.cursor.fetchall()
         return db_res[0][0]
+
+    # buy_list 보유 종목 받기 {5: 보유}
+    def get_buy_list_crawl(self,account):  # VIEW_RETAINED 로 변경 예정
+        sql = "SELECT stock_code, predict_value, up_down, naver_option FROM BUY_LIST WHERE naver_option=5 AND stock_code IN (SELECT stock_code FROM RETAINED_STOCK WHERE user_account="+account+")";
+        self.cursor.execute(sql)
+        self.conn.commit()
+
+        db_res=self.cursor.fetchall()
+        return db_res
+
+    # buy_list 관심 종목 받기 {5: 관심}  # VIEW_INTEREST 로 변경 예정
+    def get_buy_list_interest(self,account):
+        sql = "SELECT stock_code, predict_value, up_down, naver_option FROM BUY_LIST WHERE naver_option=5 AND stock_code IN (SELECT stock_code FROM INTEREST_STOCK WHERE user_account="+account+")";
+        self.cursor.execute(sql)
+        self.conn.commit()
+
+        db_res=self.cursor.fetchall()
+        return db_res
+
+    # buy_list 크롤 종목 받기 {0:거래상위, 1:거래증가, 2:거래감소, 3:급등, 4:급락}
+    def get_buy_list_crawl(self,option):
+        sql = "SELECT stock_code, predict_value, up_down, naver_option FROM BUY_LIST WHERE naver_option="+option+");"
+        self.cursor.execute(sql)
+        self.conn.commit()
+
+        db_res=self.cursor.fetchall()
+        return db_res
     
+    # sell_list 받기
+    def get_sell_list(self,account):
+        sql= "SELECT stock_code, predict_value, up_down FROM SELL_LIST WHERE stock_code IN (SELECT stock_code FROM RETAINED_STOCK WHERE user_account="+account+");" # VIEW_RETAINED 로 변경 예정
+        self.cursor.execute(sql)
+        self.conn.commit()
+
+        db_res=self.cursor.fetchall()
+        return db_res
+
     # RETAINED_STOCK 테이블에 데이터 넣기
     def retained_insert(self,account, code):    
         sql = "INSERT INTO RETAINED_STOCK (user_account,stock_code) VALUES ("+account+",'"+code+"');"
@@ -44,7 +80,7 @@ class database():
     # 보유종목 종목명 받아오기 - 파라미터 : (계좌명)
     def retained_get(self,data):
         sql = "SELECT stock_code FROM RETAINED_STOCK WHERE user_account="+data+";"
-        self.cursor.execute(sql,data)
+        self.cursor.execute(sql)
         self.conn.commit()
         db_res = self.cursor.fetchall()
         return db_res

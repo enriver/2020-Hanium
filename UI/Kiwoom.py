@@ -75,6 +75,10 @@ class Kiwoom(QAxWidget):
             self._opw00018(rqname,trcode)
         elif rqname=='opt10081_req':
             self._opt10081(rqname,trcode)
+        elif rqname=='opt10001_req':
+            self._opt10001(rqname,trcode)
+        elif rqname=='mainView':
+            self._optMainView(rqname,trcode)
 
         try:
             self.tr_event_loop.exit()
@@ -148,7 +152,74 @@ class Kiwoom(QAxWidget):
             self.ohlcv['low'].append(int(low))
             self.ohlcv['close'].append(int(close))
             self.ohlcv['volume'].append(int(volume))
-            
+
+    def _opt10001(self,rqname,trcode):
+        nowVal=self.dynamicCall("CommGetData(QString,QString,QString,int,QString)",trcode,"",rqname,0,"현재가").strip()
+        diff=self.dynamicCall("CommGetData(QString,QString,QString,int,QString)",trcode,"",rqname,0,"전일대비").strip()
+        rate=self.dynamicCall("CommGetData(QString,QString,QString,int,QString)",trcode,"",rqname,0,"등락율").strip()
+        quant=self.dynamicCall("CommGetData(QString,QString,QString,int,QString)",trcode,"",rqname,0,"거래량").strip()
+        open=self.dynamicCall("CommGetData(QString,QString,QString,int,QString)",trcode,"",rqname,0,"시가").strip()
+        high=self.dynamicCall("CommGetData(QString,QString,QString,int,QString)",trcode,"",rqname,0,"고가").strip()
+        low=self.dynamicCall("CommGetData(QString,QString,QString,int,QString)",trcode,"",rqname,0,"저가").strip()
+        up=self.dynamicCall("CommGetData(QString,QString,QString,int,QString)",trcode,"",rqname,0,"상한가").strip()
+        down=self.dynamicCall("CommGetData(QString,QString,QString,int,QString)",trcode,"",rqname,0,"하한가").strip()
+        per=self.dynamicCall("CommGetData(QString,QString,QString,int,QString)",trcode,"",rqname,0,"PER").strip()
+        roe=self.dynamicCall("CommGetData(QString,QString,QString,int,QString)",trcode,"",rqname,0,"ROE").strip()
+
+        nowVal=int(float(nowVal[1:]))
+        quant=Kiwoom.change_format(quant)
+        open=Kiwoom.change_format(open[1:])
+        high=Kiwoom.change_format(high[1:])
+        low=Kiwoom.change_format(low[1:])
+        up=Kiwoom.change_format(up[1:])
+        down=Kiwoom.change_format(down[1:])
+
+        if diff=='0':
+            diff=int(float(diff))
+            self.searchView['diff'].append(diff)
+        else:
+            diff=int(float(diff[1:]))
+            self.searchView['diff'].append(diff)
+    
+        self.searchView['nowVal'].append(nowVal)
+        self.searchView['rate'].append(rate+"%")
+        self.searchView['quant'].append(quant)
+        self.searchView['open'].append(open)
+        self.searchView['high'].append(high)
+        self.searchView['low'].append(low)
+        self.searchView['up'].append(up)
+        self.searchView['down'].append(down)
+        self.searchView['per'].append(per)
+        self.searchView['roe'].append(roe+"%")
+        
+
+    def _optMainView(self,rqname,trcode):
+        name=self.dynamicCall("CommGetData(QString,QString,QString,int,QString)",trcode,"",rqname,0,"종목명").strip()
+        nowVal=self.dynamicCall("CommGetData(QString,QString,QString,int,QString)",trcode,"",rqname,0,"현재가").strip()
+        diff=self.dynamicCall("CommGetData(QString,QString,QString,int,QString)",trcode,"",rqname,0,"전일대비").strip()
+        rate=self.dynamicCall("CommGetData(QString,QString,QString,int,QString)",trcode,"",rqname,0,"등락율").strip()
+        quant=self.dynamicCall("CommGetData(QString,QString,QString,int,QString)",trcode,"",rqname,0,"거래량").strip()
+        open=self.dynamicCall("CommGetData(QString,QString,QString,int,QString)",trcode,"",rqname,0,"시가").strip()
+        high=self.dynamicCall("CommGetData(QString,QString,QString,int,QString)",trcode,"",rqname,0,"고가").strip()
+        low=self.dynamicCall("CommGetData(QString,QString,QString,int,QString)",trcode,"",rqname,0,"저가").strip()
+        
+        nowVal=Kiwoom.change_format(nowVal[1:])
+        diff=Kiwoom.change_format(diff)
+        quant=Kiwoom.change_format(quant)
+        open=Kiwoom.change_format(open[1:])
+        high=Kiwoom.change_format(high[1:])
+        low=Kiwoom.change_format(low[1:])
+
+        self.mainView['name'].append(name)
+        self.mainView['nowVal'].append(nowVal)
+        self.mainView['diff'].append(diff)
+        self.mainView['rate'].append(rate+"%")
+        self.mainView['quant'].append(quant)
+        self.mainView['open'].append(open)
+        self.mainView['high'].append(high)
+        self.mainView['low'].append(low)
+        
+
     def get_server_gubun(self):
         ret=self.dynamicCall("KOA_Functions(QString,QString)","GetServerGubun","")
         return ret
