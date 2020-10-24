@@ -30,8 +30,8 @@ class database():
         return db_res[0][0]
 
     # buy_list 보유 종목 받기 {5: 보유}
-    def get_buy_list_crawl(self,account):  # VIEW_RETAINED 로 변경 예정
-        sql = "SELECT stock_code, predict_value, up_down, naver_option FROM BUY_LIST WHERE naver_option=5 AND stock_code IN (SELECT stock_code FROM RETAINED_STOCK WHERE user_account="+account+")";
+    def get_buy_list_retained(self,account):  # VIEW_RETAINED 로 변경 예정
+        sql = "SELECT stock_code, predict_value, up_down FROM BUY_LIST WHERE naver_option=5 AND stock_code IN (SELECT stock_code FROM VIEW_RETAINED WHERE user_account="+account+")";
         self.cursor.execute(sql)
         self.conn.commit()
 
@@ -40,7 +40,7 @@ class database():
 
     # buy_list 관심 종목 받기 {5: 관심}  # VIEW_INTEREST 로 변경 예정
     def get_buy_list_interest(self,account):
-        sql = "SELECT stock_code, predict_value, up_down, naver_option FROM BUY_LIST WHERE naver_option=5 AND stock_code IN (SELECT stock_code FROM INTEREST_STOCK WHERE user_account="+account+")";
+        sql = "SELECT stock_code, predict_value, up_down FROM BUY_LIST WHERE naver_option=5 AND stock_code IN (SELECT stock_code FROM VIEW_INTEREST WHERE user_account="+account+")";
         self.cursor.execute(sql)
         self.conn.commit()
 
@@ -49,7 +49,7 @@ class database():
 
     # buy_list 크롤 종목 받기 {0:거래상위, 1:거래증가, 2:거래감소, 3:급등, 4:급락}
     def get_buy_list_crawl(self,option):
-        sql = "SELECT stock_code, predict_value, up_down, naver_option FROM BUY_LIST WHERE naver_option="+option+");"
+        sql = "SELECT stock_code, predict_value, up_down FROM BUY_LIST WHERE naver_option="+str(option)+";"
         self.cursor.execute(sql)
         self.conn.commit()
 
@@ -58,7 +58,7 @@ class database():
     
     # sell_list 받기
     def get_sell_list(self,account):
-        sql= "SELECT stock_code, predict_value, up_down FROM SELL_LIST WHERE stock_code IN (SELECT stock_code FROM RETAINED_STOCK WHERE user_account="+account+");" # VIEW_RETAINED 로 변경 예정
+        sql= "SELECT stock_code, predict_value, up_down FROM SELL_LIST WHERE stock_code IN (SELECT stock_code FROM VIEW_RETAINED WHERE user_account="+account+");" # VIEW_RETAINED 로 변경 예정
         self.cursor.execute(sql)
         self.conn.commit()
 
@@ -78,16 +78,16 @@ class database():
         self.conn.commit()
 
     # 보유종목 종목명 받아오기 - 파라미터 : (계좌명)
-    def retained_get(self,data):
-        sql = "SELECT stock_code FROM RETAINED_STOCK WHERE user_account="+data+";"
+    def retained_get(self,account):
+        sql = "SELECT stock_code FROM RETAINED_STOCK WHERE user_account="+account+";"
         self.cursor.execute(sql)
         self.conn.commit()
         db_res = self.cursor.fetchall()
         return db_res
 
     # 관심종목 종목명 받아오기 - 파라미터 : (계좌명)
-    def interest_get(self,data):
-        sql = "SELECT stock_code FROM INTEREST_STOCK WHERE user_account='"+data+"';"
+    def interest_get(self,account):
+        sql = "SELECT stock_code FROM INTEREST_STOCK WHERE user_account="+account+";"
         self.cursor.execute(sql)
         self.conn.commit()
         db_res = self.cursor.fetchall()

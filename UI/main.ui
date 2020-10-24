@@ -536,7 +536,7 @@
        <number>1</number>
       </property>
       <attribute name="horizontalHeaderDefaultSectionSize">
-       <number>75</number>
+       <number>69</number>
       </attribute>
       <column>
        <property name="text">
@@ -586,6 +586,11 @@
       <column>
        <property name="text">
         <string>예측값</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>신뢰도</string>
        </property>
       </column>
       <column>
