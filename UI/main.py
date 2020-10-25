@@ -35,6 +35,19 @@ class MainWindow(QMainWindow,form_class):
         self.timer.start(1000)
         self.timer.timeout.connect(self.timeout)
 
+        # 아이콘 
+        self.setWindowIcon(QIcon('logo.png'))
+        
+        # 로그아웃 탭 이미지
+        pixmap1 = QPixmap('logout_logo.png')
+        self.logout_image.setScaledContents(True)
+        self.logout_image.setPixmap(QPixmap(pixmap1))
+        
+        # 설명서 탭 이미지 
+        pixmap2 = QPixmap('manual.png')
+        self.manual_image.setScaledContents(True)
+        self.manual_image.setPixmap(QPixmap(pixmap2))
+
         #로그아웃
         self.logout_btn.clicked.connect(self.logout_clicked)
 
@@ -123,6 +136,43 @@ class MainWindow(QMainWindow,form_class):
             print('첫 로그인')
             self.db.user_insert(account_num)
                     
+            # 초기 메인화면에 급등 띄우기
+            up_list=self.db.get_buy_list_crawl(0)
+
+            self.main_table.setRowCount(len(up_list))
+            if len(up_list) > 0:
+            
+                for i in range(len(up_list)):
+                    result=self.get_mainView(up_list[i][0]) # 메인뷰에 띄울것들 호출
+                    
+                    for j in range(len(result.columns)):
+                        item=QTableWidgetItem(result[result.columns[j]][0])
+                        item.setTextAlignment(Qt.AlignCenter)
+                        self.main_table.setItem(i,j,item)
+                    
+                    item=QTableWidgetItem('매수')
+                    item.setTextAlignment(Qt.AlignCenter)
+                    self.main_table.setItem(i,8,item)
+                    item=QTableWidgetItem(self.kiwoom.change_format(str(up_list[i][1]).rstrip('.0')))
+                    item.setTextAlignment(Qt.AlignCenter)
+                    self.main_table.setItem(i,9,item)
+
+                    if up_list[i][2] == 2 :
+                        item=QTableWidgetItem('상')
+                    elif up_list[i][2] == 1 :
+                        item=QTableWidgetItem('중')
+                    else:
+                        item=QTableWidgetItem('하')
+                    item.setTextAlignment(Qt.AlignCenter)
+                    self.main_table.setItem(i,10,item)
+
+                    item=QTableWidgetItem('급등')
+                    item.setTextAlignment(Qt.AlignCenter)
+                    self.main_table.setItem(i,11,item)
+                
+            self.main_table.resizeRowsToContents()
+            self.main_table.setEditTriggers(QAbstractItemView.NoEditTriggers)     
+
         else: # 첫 로그인이 아닐때
             print('첫 로그인이 아닙니다.')
 
@@ -162,7 +212,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매도')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i,8,item)
-                    item=QTableWidgetItem(str(sell_retain[i][1]))
+                    item=QTableWidgetItem(self.kiwoom.change_format(str(sell_retain[i][1]).rstrip('.0')))
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i,9,item)
 
@@ -193,7 +243,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_sell_retain,8,item)
-                    item=QTableWidgetItem(str(buy_retain[i][1]))
+                    item=QTableWidgetItem(self.kiwoom.change_format(str(buy_retain[i][1]).rstrip('.0')))
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_sell_retain,9,item)
 
@@ -224,7 +274,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_sell_retain+len_buy_retain,8,item)
-                    item=QTableWidgetItem(str(buy_interest[i][1]))
+                    item=QTableWidgetItem(self.kiwoom.change_format(str(buy_interest[i][1]).rstrip('.0')))
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_sell_retain+len_buy_retain,9,item)
 
@@ -259,7 +309,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,8,item)
-                    item=QTableWidgetItem(str(up_list[i][1]))
+                    item=QTableWidgetItem(self.kiwoom.change_format(str(up_list[i][1]).rstrip('.0')))
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,9,item)
 
@@ -819,7 +869,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,8,item)
-                    item=QTableWidgetItem(str(up_list[i][1]))
+                    item=QTableWidgetItem(self.kiwoom.change_format(str(up_list[i][1]).rstrip('.0')))
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,9,item)
 
@@ -858,7 +908,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,8,item)
-                    item=QTableWidgetItem(str(down_list[i][1]))
+                    item=QTableWidgetItem(self.kiwoom.change_format(str(down_list[i][1]).rstrip('.0')))
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,9,item)
 
@@ -894,7 +944,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,8,item)
-                    item=QTableWidgetItem(str(top_list[i][1]))
+                    item=QTableWidgetItem(self.kiwoom.change_format(str(top_list[i][1]).rstrip('.0')))
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,9,item)
 
@@ -930,7 +980,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,8,item)
-                    item=QTableWidgetItem(str(inc_list[i][1]))
+                    item=QTableWidgetItem(self.kiwoom.change_format(str(inc_list[i][1]).rstrip('.0')))
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,9,item)
 
@@ -951,7 +1001,7 @@ class MainWindow(QMainWindow,form_class):
             global dec_list
             dec_list=self.db.get_buy_list_crawl(4)
 
-            # 메인화면에 급락 띄우기
+            # 메인화면에 거래감소 띄우기
             if len(dec_list) > 0:
         
                 for i in range(len(dec_list)):
@@ -966,7 +1016,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,8,item)
-                    item=QTableWidgetItem(str(dec_list[i][1]))
+                    item=QTableWidgetItem(self.kiwoom.change_format(str(dec_list[i][1]).rstrip('.0')))
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,9,item)
 
@@ -1021,7 +1071,7 @@ class MainWindow(QMainWindow,form_class):
                 item=QTableWidgetItem('매도')
                 item.setTextAlignment(Qt.AlignCenter)
                 self.main_table.setItem(i,8,item)
-                item=QTableWidgetItem(str(sell_retain[i][1]))
+                item=QTableWidgetItem(self.kiwoom.change_format(str(sell_retain[i][1]).rstrip('.0')))
                 item.setTextAlignment(Qt.AlignCenter)
                 self.main_table.setItem(i,9,item)
 
@@ -1052,7 +1102,7 @@ class MainWindow(QMainWindow,form_class):
                 item=QTableWidgetItem('매수')
                 item.setTextAlignment(Qt.AlignCenter)
                 self.main_table.setItem(i+len_sell_retain,8,item)
-                item=QTableWidgetItem(str(buy_retain[i][1]))
+                item=QTableWidgetItem(self.kiwoom.change_format(str(buy_retain[i][1]).rstrip('.0')))
                 item.setTextAlignment(Qt.AlignCenter)
                 self.main_table.setItem(i+len_sell_retain,9,item)
 
@@ -1083,7 +1133,7 @@ class MainWindow(QMainWindow,form_class):
                 item=QTableWidgetItem('매수')
                 item.setTextAlignment(Qt.AlignCenter)
                 self.main_table.setItem(i+len_sell_retain+len_buy_retain,8,item)
-                item=QTableWidgetItem(str(buy_interest[i][1]))
+                item=QTableWidgetItem(self.kiwoom.change_format(str(buy_interest[i][1]).rstrip('.0')))
                 item.setTextAlignment(Qt.AlignCenter)
                 self.main_table.setItem(i+len_sell_retain+len_buy_retain,9,item)
 
@@ -1118,7 +1168,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,8,item)
-                    item=QTableWidgetItem(str(up_list[i][1]))
+                    item=QTableWidgetItem(self.kiwoom.change_format(str(up_list[i][1]).rstrip('.0')))
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,9,item)
 
@@ -1156,7 +1206,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,8,item)
-                    item=QTableWidgetItem(str(down_list[i][1]))
+                    item=QTableWidgetItem(self.kiwoom.change_format(str(down_list[i][1]).rstrip('.0')))
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,9,item)
 
@@ -1191,7 +1241,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,8,item)
-                    item=QTableWidgetItem(str(top_list[i][1]))
+                    item=QTableWidgetItem(self.kiwoom.change_format(str(top_list[i][1]).rstrip('.0')))
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,9,item)
 
@@ -1226,7 +1276,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,8,item)
-                    item=QTableWidgetItem(str(inc_list[i][1]))
+                    item=QTableWidgetItem(self.kiwoom.change_format(str(inc_list[i][1]).rstrip('.0')))
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,9,item)
 
@@ -1246,7 +1296,7 @@ class MainWindow(QMainWindow,form_class):
         elif optVal==4:
             dec_list=self.db.get_buy_list_crawl(4)
 
-            # 메인화면에 급락 띄우기
+            # 메인화면에 거래감소 띄우기
             if len(dec_list) > 0:
         
                 for i in range(len(dec_list)):
@@ -1261,7 +1311,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,8,item)
-                    item=QTableWidgetItem(str(dec_list[i][1]))
+                    item=QTableWidgetItem(self.kiwoom.change_format(str(dec_list[i][1]).rstrip('.0')))
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,9,item)
 

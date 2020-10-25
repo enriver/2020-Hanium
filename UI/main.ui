@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>3</number>
     </property>
     <widget class="QWidget" name="mainTab">
      <attribute name="title">
@@ -1426,27 +1426,58 @@
     </widget>
     <widget class="QWidget" name="tab">
      <attribute name="title">
-      <string>로그아웃 어디다둘지 몰라서 만든 탭</string>
+      <string>로그아웃</string>
      </attribute>
      <widget class="QPushButton" name="logout_btn">
       <property name="geometry">
        <rect>
-        <x>260</x>
-        <y>150</y>
-        <width>341</width>
-        <height>251</height>
+        <x>310</x>
+        <y>480</y>
+        <width>201</width>
+        <height>51</height>
        </rect>
       </property>
       <property name="font">
        <font>
         <family>Arial</family>
-        <pointsize>28</pointsize>
-        <weight>75</weight>
-        <bold>true</bold>
+        <pointsize>24</pointsize>
+        <weight>50</weight>
+        <bold>false</bold>
        </font>
       </property>
       <property name="text">
        <string>로그아웃</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="logout_image">
+      <property name="geometry">
+       <rect>
+        <x>200</x>
+        <y>40</y>
+        <width>451</width>
+        <height>391</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tab_2">
+     <attribute name="title">
+      <string>설명서</string>
+     </attribute>
+     <widget class="QLabel" name="manual_image">
+      <property name="geometry">
+       <rect>
+        <x>50</x>
+        <y>60</y>
+        <width>741</width>
+        <height>431</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
       </property>
      </widget>
     </widget>
