@@ -58,7 +58,7 @@ class database():
     
     # sell_list 받기
     def get_sell_list(self,account):
-        sql= "SELECT stock_code, predict_value, up_down FROM SELL_LIST WHERE stock_code IN (SELECT stock_code FROM VIEW_RETAINED WHERE user_account="+account+");" # VIEW_RETAINED 로 변경 예정
+        sql= "SELECT stock_code, predict_value, up_down FROM SELL_LIST WHERE stock_code IN (SELECT stock_code FROM VIEW_RETAINED WHERE user_account="+account+");" 
         self.cursor.execute(sql)
         self.conn.commit()
 

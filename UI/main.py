@@ -132,6 +132,29 @@ class MainWindow(QMainWindow,form_class):
         # 첫 로그인 체크
         user_check=self.db.exist_in_user(account_num)
 
+        # SELL_LIST에서 보유종목 받아오기 - 주식코드, 예측값, 업다운
+        global sell_retain
+        sell_retain=self.db.get_sell_list(account_num)
+        # BUY_LIST에서 보유종목 받아오기 - 주식코드, 예측값, 업다운
+        global buy_retain
+        buy_retain=self.db.get_buy_list_retained(account_num)
+        # BUY_LIST에서 관심종목 받아오기 - 주식코드, 예측값, 업다운
+        global buy_interest
+        buy_interest=self.db.get_buy_list_interest(account_num)
+        
+        global len_sell_retain
+        global len_buy_retain
+        global len_buy_interest
+
+        len_sell_retain=len(sell_retain)
+        len_buy_retain=len(buy_retain)
+        len_buy_interest=len(buy_interest)
+
+        global len_total
+        len_total=len_sell_retain+len_buy_retain+len_buy_interest
+        self.main_table.setRowCount(len_total)
+
+
         if user_check==0: # 첫 로그인일때
             print('첫 로그인')
             self.db.user_insert(account_num)
@@ -153,7 +176,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i,8,item)
-                    item=QTableWidgetItem(self.kiwoom.change_format(str(up_list[i][1]).rstrip('.0')))
+                    item=QTableWidgetItem(str(up_list[i][1])+"%")
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i,9,item)
 
@@ -176,28 +199,6 @@ class MainWindow(QMainWindow,form_class):
         else: # 첫 로그인이 아닐때
             print('첫 로그인이 아닙니다.')
 
-            # SELL_LIST에서 보유종목 받아오기 - 주식코드, 예측값, 업다운
-            global sell_retain
-            sell_retain=self.db.get_sell_list(account_num)
-            # BUY_LIST에서 보유종목 받아오기 - 주식코드, 예측값, 업다운
-            global buy_retain
-            buy_retain=self.db.get_buy_list_retained(account_num)
-            # BUY_LIST에서 관심종목 받아오기 - 주식코드, 예측값, 업다운
-            global buy_interest
-            buy_interest=self.db.get_buy_list_interest(account_num)
-            
-            global len_sell_retain
-            global len_buy_retain
-            global len_buy_interest
-
-            len_sell_retain=len(sell_retain)
-            len_buy_retain=len(buy_retain)
-            len_buy_interest=len(buy_interest)
-
-            global len_total
-            len_total=len_sell_retain+len_buy_retain+len_buy_interest
-            self.main_table.setRowCount(len_total)
-
             # 메인화면에 보유종목(sell) 띄우기
             if len_sell_retain > 0:
     
@@ -212,7 +213,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매도')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i,8,item)
-                    item=QTableWidgetItem(self.kiwoom.change_format(str(sell_retain[i][1]).rstrip('.0')))
+                    item=QTableWidgetItem(str(sell_retain[i][1])+"%")
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i,9,item)
 
@@ -243,7 +244,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_sell_retain,8,item)
-                    item=QTableWidgetItem(self.kiwoom.change_format(str(buy_retain[i][1]).rstrip('.0')))
+                    item=QTableWidgetItem(str(buy_retain[i][1])+"%")
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_sell_retain,9,item)
 
@@ -274,7 +275,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_sell_retain+len_buy_retain,8,item)
-                    item=QTableWidgetItem(self.kiwoom.change_format(str(buy_interest[i][1]).rstrip('.0')))
+                    item=QTableWidgetItem(str(buy_interest[i][1])+"%")
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_sell_retain+len_buy_retain,9,item)
 
@@ -309,7 +310,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,8,item)
-                    item=QTableWidgetItem(self.kiwoom.change_format(str(up_list[i][1]).rstrip('.0')))
+                    item=QTableWidgetItem(str(up_list[i][1])+"%")
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,9,item)
 
@@ -615,8 +616,7 @@ class MainWindow(QMainWindow,form_class):
     
     def crawlAndChart(self,stock_code):
             result=self.get_searchView(stock_code)
-            
-            
+              
             self.lbl_nowVal.setText(self.kiwoom.change_format(str(result.nowVal[0])))
             self.lbl_rate.setText(result.rate[0])
             self.lbl_start.setText(result.open[0])
@@ -683,8 +683,7 @@ class MainWindow(QMainWindow,form_class):
 
             #데이터프레임
             stock=self.get_ohlcv(stock_code,nowDate)
-            #print(stock)
-
+        
             w=12*60*60*1000
             
             stock['dates']=pd.to_datetime(stock['date'])
@@ -766,7 +765,7 @@ class MainWindow(QMainWindow,form_class):
             self.kiwoom.comm_rq_data("opt10081_req","opt10081",2,"0101")
 
         df=pd.DataFrame(self.kiwoom.ohlcv, columns=['date','open','high','low','close','volume'])
-        #, index=self.kiwoom.ohlcv['date']
+
         df_sorted=df.sort_values(by='date')
         return df_sorted
 
@@ -869,7 +868,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,8,item)
-                    item=QTableWidgetItem(self.kiwoom.change_format(str(up_list[i][1]).rstrip('.0')))
+                    item=QTableWidgetItem(str(up_list[i][1])+"%")
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,9,item)
 
@@ -908,7 +907,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,8,item)
-                    item=QTableWidgetItem(self.kiwoom.change_format(str(down_list[i][1]).rstrip('.0')))
+                    item=QTableWidgetItem(str(down_list[i][1])+"%")
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,9,item)
 
@@ -944,7 +943,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,8,item)
-                    item=QTableWidgetItem(self.kiwoom.change_format(str(top_list[i][1]).rstrip('.0')))
+                    item=QTableWidgetItem(str(top_list[i][1])+"%")
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,9,item)
 
@@ -980,7 +979,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,8,item)
-                    item=QTableWidgetItem(self.kiwoom.change_format(str(inc_list[i][1]).rstrip('.0')))
+                    item=QTableWidgetItem(str(inc_list[i][1])+"%")
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,9,item)
 
@@ -1016,7 +1015,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,8,item)
-                    item=QTableWidgetItem(self.kiwoom.change_format(str(dec_list[i][1]).rstrip('.0')))
+                    item=QTableWidgetItem(str(dec_list[i][1])+"%")
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,9,item)
 
@@ -1056,6 +1055,13 @@ class MainWindow(QMainWindow,form_class):
         nowTime=datetime.datetime.now().strftime("%H:%M %p")
         self.lbl_criteria.setText(nowTime)
         self.main_table.setRowCount(len_total)
+        
+        self.lbl_deposit.setText(self.kiwoom.d2_deposit)
+        self.lbl_purchase.setText(self.kiwoom.opw00018_output['single'][0]) #총매입
+        self.lbl_eval_amt.setText(self.kiwoom.opw00018_output['single'][1]) #총평가
+        self.lbl_profitLoss.setText(self.kiwoom.opw00018_output['single'][2]) #총손익
+        self.lbl_ror.setText(self.kiwoom.opw00018_output['single'][3]) #총수익률
+        self.lbl_asset.setText(self.kiwoom.opw00018_output['single'][4]) #총자산
 
         # 메인화면에 보유종목(sell) 띄우기
         if len_sell_retain > 0:
@@ -1071,7 +1077,7 @@ class MainWindow(QMainWindow,form_class):
                 item=QTableWidgetItem('매도')
                 item.setTextAlignment(Qt.AlignCenter)
                 self.main_table.setItem(i,8,item)
-                item=QTableWidgetItem(self.kiwoom.change_format(str(sell_retain[i][1]).rstrip('.0')))
+                item=QTableWidgetItem(str(sell_retain[i][1])+"%")
                 item.setTextAlignment(Qt.AlignCenter)
                 self.main_table.setItem(i,9,item)
 
@@ -1102,7 +1108,7 @@ class MainWindow(QMainWindow,form_class):
                 item=QTableWidgetItem('매수')
                 item.setTextAlignment(Qt.AlignCenter)
                 self.main_table.setItem(i+len_sell_retain,8,item)
-                item=QTableWidgetItem(self.kiwoom.change_format(str(buy_retain[i][1]).rstrip('.0')))
+                item=QTableWidgetItem(str(buy_retain[i][1])+"%")
                 item.setTextAlignment(Qt.AlignCenter)
                 self.main_table.setItem(i+len_sell_retain,9,item)
 
@@ -1133,7 +1139,7 @@ class MainWindow(QMainWindow,form_class):
                 item=QTableWidgetItem('매수')
                 item.setTextAlignment(Qt.AlignCenter)
                 self.main_table.setItem(i+len_sell_retain+len_buy_retain,8,item)
-                item=QTableWidgetItem(self.kiwoom.change_format(str(buy_interest[i][1]).rstrip('.0')))
+                item=QTableWidgetItem(str(buy_interest[i][1])+"%")
                 item.setTextAlignment(Qt.AlignCenter)
                 self.main_table.setItem(i+len_sell_retain+len_buy_retain,9,item)
 
@@ -1168,7 +1174,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,8,item)
-                    item=QTableWidgetItem(self.kiwoom.change_format(str(up_list[i][1]).rstrip('.0')))
+                    item=QTableWidgetItem(str(up_list[i][1])+"%")
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,9,item)
 
@@ -1206,7 +1212,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,8,item)
-                    item=QTableWidgetItem(self.kiwoom.change_format(str(down_list[i][1]).rstrip('.0')))
+                    item=QTableWidgetItem(str(down_list[i][1])+"%")
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,9,item)
 
@@ -1241,7 +1247,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,8,item)
-                    item=QTableWidgetItem(self.kiwoom.change_format(str(top_list[i][1]).rstrip('.0')))
+                    item=QTableWidgetItem(str(top_list[i][1])+"%")
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,9,item)
 
@@ -1276,7 +1282,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,8,item)
-                    item=QTableWidgetItem(self.kiwoom.change_format(str(inc_list[i][1]).rstrip('.0')))
+                    item=QTableWidgetItem(str(inc_list[i][1])+"%")
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,9,item)
 
@@ -1311,7 +1317,7 @@ class MainWindow(QMainWindow,form_class):
                     item=QTableWidgetItem('매수')
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,8,item)
-                    item=QTableWidgetItem(self.kiwoom.change_format(str(dec_list[i][1]).rstrip('.0')))
+                    item=QTableWidgetItem(str(dec_list[i][1])+"%")
                     item.setTextAlignment(Qt.AlignCenter)
                     self.main_table.setItem(i+len_total,9,item)
 
