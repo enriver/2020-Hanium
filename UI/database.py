@@ -5,7 +5,7 @@ class database():
     
     def __init__(self):
         self.conn = pymysql.connect(
-            host = '18.224.246.247', 
+            host = '18.216.210.44', 
             port =3306, 
             user = 'root',
             password = 'hanium', 
