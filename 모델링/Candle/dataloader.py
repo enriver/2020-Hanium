@@ -27,7 +27,16 @@ import torch
 import torchvision as tv
 from torch.utils.data import Dataset
 
-
+def FBdataset(Dataset):
+    data = pd.DataFrame(
+        { 'ds': Dataset.index,         
+          'y' : Dataset['Close']})
+    data['cap']=data.y.max()      
+    data['floor']=data.y.min()
+    data.reset_index( inplace=True )
+    del data['Date']
+    data=data.fillna(method='ffill')
+    return data
 
 
 def single_stock_generator(chart, labels, batch, dimension):
@@ -92,11 +101,11 @@ class Pathdataset(Dataset):
         
     def __getitem__(self, index):
         im = self.image[index]
-        im = self.transform(im)
+
         
         
         if self.mode:
-            #valid
+            #test
             im=self.transform(im)
             
             return im
@@ -105,21 +114,11 @@ class Pathdataset(Dataset):
             #train
             im = self.transform(im)
 
-            return im,\
-                 torch.tensor(self.labels[index] ,dtype=torch.long)
+            return im, torch.tensor(self.labels[index] ,dtype=torch.long)
         
     def __len__(self):
         return self.len
             
             
 
-def FBdataset(Dataset):
-    data = pd.DataFrame(
-        { 'ds': Dataset.index,         
-          'y' : Dateset['Close']})
-    data['cap']=data.y.max()      
-    data['floor']=data.y.min()
-    data.reset_index( inplace=True )
-    del data['Date']
-    data=data.fillna(method='ffill')
-    return data
+

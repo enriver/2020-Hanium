@@ -15,63 +15,69 @@ import os
 import datetime
 import sqlite3
 import datetime
-
-def naver(select):
-    print('connect to naver finance')
-    select = select
-    choice = select.split('.')
+from tqdm import tqdm
+def naver():
+    nav= pd.DataFrame(columns = ['1_kd','2_kd','3_kd','4_kd','5_kd','1_kp','2_kp','3_kp','4_kp','5_kp'])
     
     url_set={'상승' : 'rise', '보합' : 'steady', '하락' : 'fall',
              '급등' : 'low_up',
              '급락' : 'high_down', '거래상위' : 'quant', '거래증가' : 'quant_high', '거래감소' : 'quant_low'}
     market={'코스피' : '0', '코스닥' : '1'}
-
-    print(choice[0])
-    print(choice[1])    
-    url = 'https://finance.naver.com/sise/sise_'+choice[0]+'.nhn?sosok='+choice[1]
-
-    source_code = requests.get(url).text
-    html = BeautifulSoup(source_code, "html.parser")
     
-    #테이블 불러오기
-    try:
-
-        table = html.select('table.type_2')[0]
-        #aa=table.select('tr')
+    url_set=['low_up','high_down','quant','quant_high','quant_low']
+    market = ['0','1']
     
-        #이름 불러오기
-        title = table.select('a.tltle')
-        #price = table.select('td.number')
-        index=[]
-        num=0
-        names=[]
-        for i in title:
-            num+=1
-            index.append(num)
-            names.append(i.text)
+    for i in range(len(nav.columns)):
+        if i <5:
+            
+            count1 = i
+            count2 = 0
+        else:
+            count1 = i-5
+            count2 = 1
+    
         
+        #테이블 불러오기
+        try:
+            url = 'https://finance.naver.com/sise/sise_'+url_set[count1]+'.nhn?sosok='+market[count2]
+        
+            source_code = requests.get(url).text
+            html = BeautifulSoup(source_code, "html.parser")
     
+            table = html.select('table.type_2')[0]
+            #aa=table.select('tr')
+        
+            #이름 불러오기
+            title = table.select('a.tltle')
+            #price = table.select('td.number')
+            index=[]
+            num=0
+            names=[]
+            for j in title:
+                num+=1
+                index.append(num)
+                names.append(j.text)
+            
+            nav[nav.columns[i]]=names
     
-        result= {"Rank" : index,"Name" : names} 
-        df_result = pd.DataFrame(result)
-        df_result.head(10)
-        print(df_result)
-    except:
-        print('cant connect to finance data by wifi')
-        print('plz try again')
-        exit()
-    return df_result.head(10)
+            print(nav.head(10))
+        except:
+            print('cant connect to finance data by wifi')
+            print('plz try again')
+            exit()
+    return nav.head(100)
 
 
 def bollinger(period, pb, pre, min_per,start_date, df_result):
-    before_df = df_result
-    df_krx = fdr.StockListing('KOSPI')
-    top=pd.merge(df_krx, before_df, on='Name')
-    bu=top['Symbol']
+    #before_df = df_result
+    #df_krx = fdr.StockListing('KRX')
+    #top=pd.merge(df_krx, before_df, on='Name')
+    #bu=top['Symbol']
+    bu = list(df_result)
     top_list=[]
-    for i in range(len(bu)):
+    for i in tqdm(range(len(bu))):
         df=[]
-        df=fdr.DataReader(bu.values[i], '2020-08-01')
+        df=fdr.DataReader(bu[i], '2020-09-01')
         df['Moving Average']=df['Close'].rolling(window=period, min_periods = min_per).mean()
         df['Std'] = df['Close'].rolling(window=period, min_periods =min_per).std()
         
@@ -87,20 +93,21 @@ def bollinger(period, pb, pre, min_per,start_date, df_result):
             if df.loc[df.index[j],('Close')]>df.loc[df.index[j],('Lower Band')] and b.all()==True:
                 df['Bollinger'][df.index[j]]='Buy'
         top_list.append(df)
-    return top_list, top
+    return top_list
 
 def second_check(top_list, top):
     Sale_com=[]
     Buy_com=[]
-    for i in range(len(top.index)):
+    tops = list(top)
+    for i in range(len(tops)):
         last = top_list[i].tail(1)['Bollinger']
         ss = last.values=='Sell'
         kk = last.values=='Buy'
         if ss.any():
-            Sale_com.append(top['Name'][i])
+            Sale_com.append(tops[i])
         if kk.any():
-            Buy_com.append(top['Name'][i])
-    Buy_com.append(top['Name'][0])        
+            Buy_com.append(tops[i])
+           
     return Sale_com, Buy_com
 
 

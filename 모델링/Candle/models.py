@@ -14,6 +14,7 @@ import math
 
 
 # 가중치 초기화
+
 def weights_init(mod):
     classname = mod.__class__.__name__
     if classname.find('Conv') != -1:
@@ -21,15 +22,27 @@ def weights_init(mod):
     elif classname.find('BatchNorm') != -1:
         mod.weight.data.normal_(1.0, 0.02)
         mod.bias.data.fill_(0)
-        
+"""
 
+
+def weights_init(m): 
+    if isinstance(m, nn.Conv2d): 
+        nn.init.xavier_normal_(m.weight.data) 
+        nn.init.xavier_normal_(m.bias.data)
+    elif isinstance(m, nn.BatchNorm2d):
+        nn.init.constant_(m.weight,1)
+        nn.init.constant_(m.bias, 0)
+    elif isinstance(m, nn.BatchNorm1d):
+        nn.init.constant_(m.weight,1)
+        nn.init.constant_(m.bias, 0)
+"""
 
 
 class CNN_model(nn.Module):
     
     def __init__(self):
         super(CNN_model, self).__init__()
-        self.conv1 = nn.Conv2d(3,32, 3,stride = 1, padding = 1)
+        self.conv1 = nn.Conv2d(4,32, 3,stride = 1, padding = 1)
         self.relu = nn.ReLU()
         self.conv2 = nn.Conv2d(32,48, 3,stride = 1, padding = 1)
         self.conv3 = nn.Conv2d(48,64,3, stride = 1, padding = 1)
@@ -40,7 +53,9 @@ class CNN_model(nn.Module):
         self.fc1 = nn.Linear(864, 256)
         self.fc2 = nn.Linear(256, 2)
         self.softmax = nn.Softmax()
+
         
+
         
     def forward(self, input):
         output = self.conv1(input)
@@ -77,7 +92,6 @@ class CNN_model(nn.Module):
         
         
         return output
-
     
 """
 modelss = CNN_model()
