@@ -1,3 +1,5 @@
-### 한이음 프로젝트
+### Hanium Competition
 
-딥러닝과 인공지능을 활용한 금융지표 예측 프레임워크 개발
+2020 Hanium ICT Competition (https://www.hanium.or.kr/portal/index.do)
+
+'Development of Financial Index Forecasting Framework Using Deep Learning and Artificial Intelligence'
